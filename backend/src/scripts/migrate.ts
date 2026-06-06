@@ -1,19 +1,20 @@
 /* eslint-disable no-console */
 import dotenv from 'dotenv';
-dotenv.config();
-
 import mongoose from 'mongoose';
-import { Role } from '../models/role.model';
-import { User } from '../models/user.model';
-import { Service } from '../models/service.model';
+
 import { Booking } from '../models/booking.model';
-import { Payment } from '../models/payment.model';
-import { Invoice } from '../models/invoice.model';
-import { Receipt } from '../models/receipt.model';
-import { Testimonial } from '../models/testimonial.model';
-import { Session } from '../models/session.model';
 import { EmailVerification } from '../models/email-verification.model';
+import { Invoice } from '../models/invoice.model';
 import { PasswordResetToken } from '../models/password-reset-token.model';
+import { Payment } from '../models/payment.model';
+import { Receipt } from '../models/receipt.model';
+import { Role } from '../models/role.model';
+import { Service } from '../models/service.model';
+import { Session } from '../models/session.model';
+import { Testimonial } from '../models/testimonial.model';
+import { User } from '../models/user.model';
+
+dotenv.config();
 
 const MONGODB_URI = process.env.MONGODB_URI ?? '';
 
