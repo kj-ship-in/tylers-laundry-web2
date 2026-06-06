@@ -15,4 +15,3 @@ uploads/*
 /.pnp.js
 .pnp.cjs
 .pnp.mjs
-/yarn.lock
