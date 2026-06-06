@@ -14,7 +14,8 @@
     "format": "prettier --write \"src/**/*.{ts,js,mjs,json}\"",
     "clean": "rm -rf node_modules dist .cache .eslintcache && yarn cache clean",
     "prepare": "husky",
-    "db:migrate": "dotenv -e .env -- tsx src/scripts/migrate.ts",
+    "db:migrate": "node dist/scripts/migrate.js",
+    "db:migrate:dev": "dotenv -e .env -- tsx src/scripts/migrate.ts",
     "db:seed": "dotenv -e .env -- tsx src/scripts/seed.ts"
   },
   "keywords": [],
