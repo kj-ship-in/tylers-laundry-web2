@@ -6,7 +6,8 @@ import type { AuthResponse } from '@/types/auth';
 import { parseExpiresIn } from '@/utils/helpers';
 
 const BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000/api/v1';
+  process.env.NEXT_PUBLIC_API_URL ??
+  'https://tylers-laundry-api-ckl4.onrender.com/api/v1';
 
 if (!BASE_URL) {
   throw new Error('API URL is not defined');

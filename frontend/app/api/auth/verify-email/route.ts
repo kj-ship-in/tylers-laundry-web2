@@ -5,7 +5,8 @@ import axios from 'axios';
 import { authOptions } from '../[...nextauth]/route';
 
 const BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000/api/v1';
+  process.env.NEXT_PUBLIC_API_URL ??
+  'https://tylers-laundry-api-ckl4.onrender.com/api/v1';
 
 export async function POST(request: NextRequest) {
   try {

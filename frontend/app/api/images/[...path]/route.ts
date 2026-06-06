@@ -8,7 +8,7 @@ export async function GET(
   try {
     const { path } = await params;
     const pathString = path.join('/');
-    const backendUrl = `http://localhost:5000/${pathString}`;
+    const backendUrl = `https://tylers-laundry-api-ckl4.onrender.com/${pathString}`;
 
     // Fetch the image from the backend
     const response = await fetch(backendUrl);
