@@ -1,5 +1,10 @@
-import winston from 'winston';
-import { env } from '../config/env';
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const winston_1 = __importDefault(require("winston"));
+const env_1 = require("../config/env");
 const levels = {
     error: 0,
     warn: 1,
@@ -14,26 +19,26 @@ const colors = {
     http: 'magenta',
     debug: 'white',
 };
-winston.addColors(colors);
-const format = winston.format.combine(winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss:ms' }), winston.format.colorize({ all: true }), winston.format.printf((info) => `${String(info.timestamp)} ${String(info.level)}: ${String(info.message)}`));
+winston_1.default.addColors(colors);
+const format = winston_1.default.format.combine(winston_1.default.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss:ms' }), winston_1.default.format.colorize({ all: true }), winston_1.default.format.printf((info) => `${String(info.timestamp)} ${String(info.level)}: ${String(info.message)}`));
 const transports = [
-    new winston.transports.Console({
-        format: winston.format.combine(winston.format.colorize(), winston.format.simple()),
+    new winston_1.default.transports.Console({
+        format: winston_1.default.format.combine(winston_1.default.format.colorize(), winston_1.default.format.simple()),
     }),
-    new winston.transports.File({
+    new winston_1.default.transports.File({
         filename: 'logs/error.log',
         level: 'error',
-        format: winston.format.combine(winston.format.timestamp(), winston.format.json()),
+        format: winston_1.default.format.combine(winston_1.default.format.timestamp(), winston_1.default.format.json()),
     }),
-    new winston.transports.File({
+    new winston_1.default.transports.File({
         filename: 'logs/combined.log',
-        format: winston.format.combine(winston.format.timestamp(), winston.format.json()),
+        format: winston_1.default.format.combine(winston_1.default.format.timestamp(), winston_1.default.format.json()),
     }),
 ];
-const logger = winston.createLogger({
-    level: env.NODE_ENV === 'development' ? 'debug' : 'warn',
+const logger = winston_1.default.createLogger({
+    level: env_1.env.NODE_ENV === 'development' ? 'debug' : 'warn',
     levels,
     format,
     transports,
 });
-export default logger;
+exports.default = logger;

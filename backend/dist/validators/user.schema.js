@@ -1,11 +1,14 @@
-import { z } from 'zod';
-export const UpdateProfileDetailsSchema = z.object({
-    name: z.string().optional(),
-    email: z.email().optional(),
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.UserIdSchema = exports.UpdateProfilePictureSchema = exports.UpdateProfileDetailsSchema = void 0;
+const zod_1 = require("zod");
+exports.UpdateProfileDetailsSchema = zod_1.z.object({
+    name: zod_1.z.string().optional(),
+    email: zod_1.z.email().optional(),
 });
-export const UpdateProfilePictureSchema = z.object({
-    profileUrl: z.string().url({ message: 'Must be a valid URL' }),
+exports.UpdateProfilePictureSchema = zod_1.z.object({
+    profileUrl: zod_1.z.string().url({ message: 'Must be a valid URL' }),
 });
-export const UserIdSchema = z.object({
-    userId: z.number().int().positive(),
+exports.UserIdSchema = zod_1.z.object({
+    userId: zod_1.z.number().int().positive(),
 });

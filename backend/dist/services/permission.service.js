@@ -1,26 +1,34 @@
-import { User } from '../models/user.model';
-import { Role } from '../models/role.model';
-export const getUserPermissions = async (userId) => {
-    const user = await User.findById(userId);
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.userHasAnyPermission = exports.getPermissionsAsStrings = exports.userHasPermission = exports.hasPermission = exports.getUserPermissions = void 0;
+const user_model_1 = require("../models/user.model");
+const role_model_1 = require("../models/role.model");
+const getUserPermissions = async (userId) => {
+    const user = await user_model_1.User.findById(userId);
     if (!user)
         return [];
-    const role = await Role.findById(user.roleId);
+    const role = await role_model_1.Role.findById(user.roleId);
     const rolePermissions = (role?.permissions ?? []);
     const customPermissions = (user.permissions ?? []);
     return [...new Set([...rolePermissions, ...customPermissions])];
 };
-export const hasPermission = (userPermissions, permission) => {
+exports.getUserPermissions = getUserPermissions;
+const hasPermission = (userPermissions, permission) => {
     return userPermissions.includes(permission);
 };
-export const userHasPermission = async (userId, permission) => {
-    const userPermissions = await getUserPermissions(userId);
-    return hasPermission(userPermissions, permission);
+exports.hasPermission = hasPermission;
+const userHasPermission = async (userId, permission) => {
+    const userPermissions = await (0, exports.getUserPermissions)(userId);
+    return (0, exports.hasPermission)(userPermissions, permission);
 };
-export const getPermissionsAsStrings = async (userId) => {
-    const permissions = await getUserPermissions(userId);
+exports.userHasPermission = userHasPermission;
+const getPermissionsAsStrings = async (userId) => {
+    const permissions = await (0, exports.getUserPermissions)(userId);
     return permissions.map(p => p.toLowerCase().replace(/_/g, ':'));
 };
-export const userHasAnyPermission = async (userId, permissions) => {
-    const userPermissions = await getUserPermissions(userId);
-    return permissions.some(permission => hasPermission(userPermissions, permission));
+exports.getPermissionsAsStrings = getPermissionsAsStrings;
+const userHasAnyPermission = async (userId, permissions) => {
+    const userPermissions = await (0, exports.getUserPermissions)(userId);
+    return permissions.some(permission => (0, exports.hasPermission)(userPermissions, permission));
 };
+exports.userHasAnyPermission = userHasAnyPermission;

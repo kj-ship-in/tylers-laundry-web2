@@ -1,9 +1,12 @@
+"use strict";
 /**
  * Delivery Fee Configuration
  * Define default delivery fees for different areas/zones in The Gambia
  * Fees are calculated automatically based on delivery address
  */
-export const DELIVERY_FEE_CONFIG = {
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.applyBulkDiscount = exports.calculateDeliveryFee = exports.detectZoneFromAddress = exports.DELIVERY_FEE_CONFIG = void 0;
+exports.DELIVERY_FEE_CONFIG = {
     // Base delivery fee applied to all bookings
     BASE_DELIVERY_FEE: 20.0,
     // Zone-based delivery fees for The Gambia (based on distance/area)
@@ -84,12 +87,12 @@ export const DELIVERY_FEE_CONFIG = {
  * @param address - Delivery address string
  * @returns Zone key (e.g., 'ZONE_1') or undefined if no match found
  */
-export const detectZoneFromAddress = (address) => {
+const detectZoneFromAddress = (address) => {
     if (!address)
         return undefined;
     const lowerAddress = address.toLowerCase();
     // Iterate through zones and check keywords
-    for (const [zoneKey, zoneConfig] of Object.entries(DELIVERY_FEE_CONFIG.ZONES)) {
+    for (const [zoneKey, zoneConfig] of Object.entries(exports.DELIVERY_FEE_CONFIG.ZONES)) {
         if (zoneConfig.keywords?.some(keyword => lowerAddress.includes(keyword))) {
             return zoneKey;
         }
@@ -97,6 +100,7 @@ export const detectZoneFromAddress = (address) => {
     // Default to ZONE_1 if no match found
     return 'ZONE_1';
 };
+exports.detectZoneFromAddress = detectZoneFromAddress;
 /**
  * Get delivery fee based on delivery address and service type
  * Automatically detects zone from delivery address
@@ -105,43 +109,45 @@ export const detectZoneFromAddress = (address) => {
  * @param weight - Weight of items in kg (optional)
  * @returns Calculated delivery fee
  */
-export const calculateDeliveryFee = (deliveryAddress, serviceType, weight) => {
-    let fee = DELIVERY_FEE_CONFIG.BASE_DELIVERY_FEE;
+const calculateDeliveryFee = (deliveryAddress, serviceType, weight) => {
+    let fee = exports.DELIVERY_FEE_CONFIG.BASE_DELIVERY_FEE;
     // Detect zone from delivery address
     if (deliveryAddress) {
-        const detectedZone = detectZoneFromAddress(deliveryAddress);
+        const detectedZone = (0, exports.detectZoneFromAddress)(deliveryAddress);
         if (detectedZone) {
-            const zoneConfig = DELIVERY_FEE_CONFIG.ZONES[detectedZone];
+            const zoneConfig = exports.DELIVERY_FEE_CONFIG.ZONES[detectedZone];
             fee = zoneConfig.fee;
         }
     }
     // Add service surcharge if service type provided
     if (serviceType &&
-        DELIVERY_FEE_CONFIG.SERVICE_SURCHARGES[serviceType]) {
-        const surcharge = DELIVERY_FEE_CONFIG.SERVICE_SURCHARGES[serviceType];
+        exports.DELIVERY_FEE_CONFIG.SERVICE_SURCHARGES[serviceType]) {
+        const surcharge = exports.DELIVERY_FEE_CONFIG.SERVICE_SURCHARGES[serviceType];
         fee += surcharge;
     }
     // Add weight-based surcharge if enabled and weight provided
-    if (DELIVERY_FEE_CONFIG.WEIGHT_BASED.enabled &&
+    if (exports.DELIVERY_FEE_CONFIG.WEIGHT_BASED.enabled &&
         weight &&
-        weight > DELIVERY_FEE_CONFIG.WEIGHT_BASED.thresholdKg) {
-        const weightSurcharge = (weight - DELIVERY_FEE_CONFIG.WEIGHT_BASED.thresholdKg) *
-            DELIVERY_FEE_CONFIG.WEIGHT_BASED.surchargePerKg;
+        weight > exports.DELIVERY_FEE_CONFIG.WEIGHT_BASED.thresholdKg) {
+        const weightSurcharge = (weight - exports.DELIVERY_FEE_CONFIG.WEIGHT_BASED.thresholdKg) *
+            exports.DELIVERY_FEE_CONFIG.WEIGHT_BASED.surchargePerKg;
         fee += weightSurcharge;
     }
     return Math.round(fee * 100) / 100; // Round to 2 decimal places
 };
+exports.calculateDeliveryFee = calculateDeliveryFee;
 /**
  * Apply bulk discount if applicable
  * @param subtotal - Subtotal before delivery fee
  * @param discount - Current discount amount
  * @returns Adjusted discount amount
  */
-export const applyBulkDiscount = (subtotal, discount = 0) => {
-    if (DELIVERY_FEE_CONFIG.BULK_DISCOUNT.enabled &&
-        subtotal >= DELIVERY_FEE_CONFIG.BULK_DISCOUNT.minimumAmountRequired) {
-        const bulkDiscount = (subtotal * DELIVERY_FEE_CONFIG.BULK_DISCOUNT.percentageDiscount) / 100;
+const applyBulkDiscount = (subtotal, discount = 0) => {
+    if (exports.DELIVERY_FEE_CONFIG.BULK_DISCOUNT.enabled &&
+        subtotal >= exports.DELIVERY_FEE_CONFIG.BULK_DISCOUNT.minimumAmountRequired) {
+        const bulkDiscount = (subtotal * exports.DELIVERY_FEE_CONFIG.BULK_DISCOUNT.percentageDiscount) / 100;
         return discount + bulkDiscount;
     }
     return discount;
 };
+exports.applyBulkDiscount = applyBulkDiscount;

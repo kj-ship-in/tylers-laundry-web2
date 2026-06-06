@@ -1,15 +1,19 @@
-import { getDashboardDataService, getBookingReportsService, deleteStaffService, updateUserStatusService, deleteCustomerService, } from '../services/admin.service';
-import { Permission } from '../types/enums';
-export const getDashboardDataController = async (_, res, next) => {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getAllPermissionsController = exports.deleteCustomerController = exports.updateUserStatusController = exports.deleteStaffController = exports.getBookingReportsController = exports.getDashboardDataController = void 0;
+const admin_service_1 = require("../services/admin.service");
+const enums_1 = require("../types/enums");
+const getDashboardDataController = async (_, res, next) => {
     try {
-        const data = await getDashboardDataService();
+        const data = await (0, admin_service_1.getDashboardDataService)();
         return res.status(200).json({ message: 'Dashboard data fetched', data });
     }
     catch (error) {
         next(error);
     }
 };
-export const getBookingReportsController = async (req, res, next) => {
+exports.getDashboardDataController = getDashboardDataController;
+const getBookingReportsController = async (req, res, next) => {
     try {
         const { from, to } = req.query;
         if (!from || !to) {
@@ -17,17 +21,18 @@ export const getBookingReportsController = async (req, res, next) => {
                 .status(400)
                 .json({ message: "'from' and 'to' query parameters are required" });
         }
-        const data = await getBookingReportsService(new Date(from), new Date(to));
+        const data = await (0, admin_service_1.getBookingReportsService)(new Date(from), new Date(to));
         return res.status(200).json({ message: 'Booking report fetched', data });
     }
     catch (error) {
         next(error);
     }
 };
-export const deleteStaffController = async (req, res, next) => {
+exports.getBookingReportsController = getBookingReportsController;
+const deleteStaffController = async (req, res, next) => {
     try {
         const staffId = req.params.id;
-        const deletedStaff = await deleteStaffService(staffId);
+        const deletedStaff = await (0, admin_service_1.deleteStaffService)(staffId);
         return res.status(200).json({
             message: 'Staff deleted successfully',
             data: deletedStaff,
@@ -37,14 +42,15 @@ export const deleteStaffController = async (req, res, next) => {
         next(error);
     }
 };
-export const updateUserStatusController = async (req, res, next) => {
+exports.deleteStaffController = deleteStaffController;
+const updateUserStatusController = async (req, res, next) => {
     try {
         const userId = req.params.id;
         const { isActive } = req.body;
         if (typeof isActive !== 'boolean') {
             return res.status(400).json({ message: 'isActive must be a boolean' });
         }
-        const updatedUser = await updateUserStatusService(userId, isActive);
+        const updatedUser = await (0, admin_service_1.updateUserStatusService)(userId, isActive);
         return res.status(200).json({
             message: `User status updated to ${isActive ? 'active' : 'inactive'} successfully`,
             data: updatedUser,
@@ -54,10 +60,11 @@ export const updateUserStatusController = async (req, res, next) => {
         next(error);
     }
 };
-export const deleteCustomerController = async (req, res, next) => {
+exports.updateUserStatusController = updateUserStatusController;
+const deleteCustomerController = async (req, res, next) => {
     try {
         const customerId = req.params.id;
-        const deletedCustomer = await deleteCustomerService(customerId);
+        const deletedCustomer = await (0, admin_service_1.deleteCustomerService)(customerId);
         return res.status(200).json({
             message: 'Customer deleted successfully',
             data: deletedCustomer,
@@ -67,9 +74,10 @@ export const deleteCustomerController = async (req, res, next) => {
         next(error);
     }
 };
-export const getAllPermissionsController = async (_, res, next) => {
+exports.deleteCustomerController = deleteCustomerController;
+const getAllPermissionsController = async (_, res, next) => {
     try {
-        const permissions = Object.values(Permission);
+        const permissions = Object.values(enums_1.Permission);
         return res.status(200).json({
             message: 'All permissions retrieved successfully',
             data: permissions,
@@ -80,3 +88,4 @@ export const getAllPermissionsController = async (_, res, next) => {
         next(error);
     }
 };
+exports.getAllPermissionsController = getAllPermissionsController;

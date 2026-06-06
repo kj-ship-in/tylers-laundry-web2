@@ -1,9 +1,12 @@
-import { Permission } from '../types/enums';
-import { userHasPermission, userHasAnyPermission, } from '../services/permission.service';
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.requireOwnershipOrAdmin = exports.requireAnyPermission = exports.requirePermission = void 0;
+const enums_1 = require("../types/enums");
+const permission_service_1 = require("../services/permission.service");
 /**
  * Middleware to check if user has required permission
  */
-export const requirePermission = (permission) => {
+const requirePermission = (permission) => {
     return async (req, res, next) => {
         try {
             const user = req.user;
@@ -14,7 +17,7 @@ export const requirePermission = (permission) => {
                 });
                 return;
             }
-            const userHasRequiredPermission = await userHasPermission(user.id, permission);
+            const userHasRequiredPermission = await (0, permission_service_1.userHasPermission)(user.id, permission);
             if (!userHasRequiredPermission) {
                 res.status(403).json({
                     success: false,
@@ -30,10 +33,11 @@ export const requirePermission = (permission) => {
         }
     };
 };
+exports.requirePermission = requirePermission;
 /**
  * Middleware to check if user has any of the required permissions
  */
-export const requireAnyPermission = (permissions) => {
+const requireAnyPermission = (permissions) => {
     return async (req, res, next) => {
         try {
             const user = req.user;
@@ -44,7 +48,7 @@ export const requireAnyPermission = (permissions) => {
                 });
                 return;
             }
-            const hasAnyPermission = await userHasAnyPermission(user.id, permissions);
+            const hasAnyPermission = await (0, permission_service_1.userHasAnyPermission)(user.id, permissions);
             if (!hasAnyPermission) {
                 res.status(403).json({
                     success: false,
@@ -60,10 +64,11 @@ export const requireAnyPermission = (permissions) => {
         }
     };
 };
+exports.requireAnyPermission = requireAnyPermission;
 /**
  * Middleware to check if user owns the resource or has admin permissions
  */
-export const requireOwnershipOrAdmin = (getResourceUserId, adminPermission = Permission.STAFF_MANAGE) => {
+const requireOwnershipOrAdmin = (getResourceUserId, adminPermission = enums_1.Permission.STAFF_MANAGE) => {
     return async (req, res, next) => {
         try {
             const user = req.user;
@@ -75,7 +80,7 @@ export const requireOwnershipOrAdmin = (getResourceUserId, adminPermission = Per
                 return;
             }
             // Check if user is admin
-            const isAdmin = await userHasPermission(user.id, adminPermission);
+            const isAdmin = await (0, permission_service_1.userHasPermission)(user.id, adminPermission);
             if (isAdmin) {
                 next();
                 return;
@@ -96,3 +101,4 @@ export const requireOwnershipOrAdmin = (getResourceUserId, adminPermission = Per
         }
     };
 };
+exports.requireOwnershipOrAdmin = requireOwnershipOrAdmin;

@@ -1,9 +1,15 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.markInvoiceAsPaid = exports.getInvoiceStats = exports.getOverdueInvoices = exports.generateInvoicesReport = exports.generateInvoicePDF = exports.deleteInvoice = exports.updateInvoice = exports.getInvoiceById = exports.getAllInvoices = exports.createInvoice = void 0;
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Invoice } from '../models/invoice.model';
-import { Payment } from '../models/payment.model';
-import { InvoiceStatus } from '../types/enums';
-import ExcelReportGenerator from '../utils/excel-generator';
-import PDFGenerator from '../utils/pdf-generator';
+const invoice_model_1 = require("../models/invoice.model");
+const payment_model_1 = require("../models/payment.model");
+const enums_1 = require("../types/enums");
+const excel_generator_1 = __importDefault(require("../utils/excel-generator"));
+const pdf_generator_1 = __importDefault(require("../utils/pdf-generator"));
 const invoicePopulate = [
     {
         path: 'paymentId',
@@ -12,7 +18,7 @@ const invoicePopulate = [
     'receipt',
 ];
 const generateInvoiceNumber = async () => {
-    const last = await Invoice.findOne().sort({ createdAt: -1 }).select('invoiceNo');
+    const last = await invoice_model_1.Invoice.findOne().sort({ createdAt: -1 }).select('invoiceNo');
     let nextNumber = 1;
     if (last?.invoiceNo) {
         const match = last.invoiceNo.match(/INV-(\d+)/);
@@ -21,12 +27,13 @@ const generateInvoiceNumber = async () => {
     }
     return `INV-${nextNumber.toString().padStart(4, '0')}`;
 };
-export const createInvoice = async (data) => {
+const createInvoice = async (data) => {
     const invoiceNo = await generateInvoiceNumber();
-    const invoice = await Invoice.create({ ...data, invoiceNo });
-    return Invoice.findById(invoice._id).populate(invoicePopulate);
+    const invoice = await invoice_model_1.Invoice.create({ ...data, invoiceNo });
+    return invoice_model_1.Invoice.findById(invoice._id).populate(invoicePopulate);
 };
-export const getAllInvoices = async (options) => {
+exports.createInvoice = createInvoice;
+const getAllInvoices = async (options) => {
     const { page = 1, limit = 10, status, startDate, endDate, search } = options ?? {};
     const skip = (page - 1) * limit;
     const where = {};
@@ -36,7 +43,7 @@ export const getAllInvoices = async (options) => {
         where.issuedAt = { $gte: new Date(startDate), $lte: new Date(endDate) };
     }
     if (search) {
-        const matchingPayments = await Payment.aggregate([
+        const matchingPayments = await payment_model_1.Payment.aggregate([
             {
                 $lookup: {
                     from: 'bookings',
@@ -72,29 +79,33 @@ export const getAllInvoices = async (options) => {
         ];
     }
     const [invoices, total] = await Promise.all([
-        Invoice.find(where)
+        invoice_model_1.Invoice.find(where)
             .populate(invoicePopulate)
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit),
-        Invoice.countDocuments(where),
+        invoice_model_1.Invoice.countDocuments(where),
     ]);
     return {
         invoices,
         pagination: { page, limit, total, pages: Math.ceil(total / limit) },
     };
 };
-export const getInvoiceById = async (id) => {
-    return Invoice.findById(id).populate(invoicePopulate);
+exports.getAllInvoices = getAllInvoices;
+const getInvoiceById = async (id) => {
+    return invoice_model_1.Invoice.findById(id).populate(invoicePopulate);
 };
-export const updateInvoice = async (id, data) => {
-    return Invoice.findByIdAndUpdate(id, data, { new: true }).populate(invoicePopulate);
+exports.getInvoiceById = getInvoiceById;
+const updateInvoice = async (id, data) => {
+    return invoice_model_1.Invoice.findByIdAndUpdate(id, data, { new: true }).populate(invoicePopulate);
 };
-export const deleteInvoice = async (id) => {
-    return Invoice.findByIdAndDelete(id);
+exports.updateInvoice = updateInvoice;
+const deleteInvoice = async (id) => {
+    return invoice_model_1.Invoice.findByIdAndDelete(id);
 };
-export const generateInvoicePDF = async (invoiceId) => {
-    const invoice = await getInvoiceById(invoiceId);
+exports.deleteInvoice = deleteInvoice;
+const generateInvoicePDF = async (invoiceId) => {
+    const invoice = await (0, exports.getInvoiceById)(invoiceId);
     if (!invoice)
         throw new Error('Invoice not found');
     const invoiceData = {
@@ -104,59 +115,62 @@ export const generateInvoicePDF = async (invoiceId) => {
         user: invoice.paymentId?.bookingId?.userId,
         service: invoice.paymentId?.bookingId?.serviceId,
     };
-    const pdfBuffer = await PDFGenerator.generateInvoicePDF(invoiceData);
+    const pdfBuffer = await pdf_generator_1.default.generateInvoicePDF(invoiceData);
     const filename = `invoice-${invoice.invoiceNo}-${Date.now()}.pdf`;
-    const filepath = await PDFGenerator.savePDFToFile(pdfBuffer, filename);
+    const filepath = await pdf_generator_1.default.savePDFToFile(pdfBuffer, filename);
     return { pdfBuffer, filepath, filename };
 };
-export const generateInvoicesReport = async (filters) => {
+exports.generateInvoicePDF = generateInvoicePDF;
+const generateInvoicesReport = async (filters) => {
     const where = {};
     if (filters.status)
         where.status = filters.status;
     if (filters.startDate && filters.endDate) {
         where.issuedAt = { $gte: new Date(filters.startDate), $lte: new Date(filters.endDate) };
     }
-    const invoices = await Invoice.find(where)
+    const invoices = await invoice_model_1.Invoice.find(where)
         .populate(invoicePopulate)
         .sort({ createdAt: -1 });
     // Convert to plain objects so toJSON transforms run recursively:
     // paymentId→payment, bookingId→booking, userId→user, serviceId→service
     const plainInvoices = invoices.map(i => i.toJSON());
     if (filters.format === 'excel') {
-        const excelBuffer = await ExcelReportGenerator.generateInvoicesReport(plainInvoices, filters);
+        const excelBuffer = await excel_generator_1.default.generateInvoicesReport(plainInvoices, filters);
         const filename = `invoices-report-${Date.now()}.xlsx`;
-        const filepath = await ExcelReportGenerator.saveExcelToFile(excelBuffer, filename);
+        const filepath = await excel_generator_1.default.saveExcelToFile(excelBuffer, filename);
         return { buffer: excelBuffer, filepath, filename, format: 'excel' };
     }
     if (filters.format === 'pdf') {
-        const pdfBuffer = await PDFGenerator.generateInvoicesReportPDF(plainInvoices, filters);
+        const pdfBuffer = await pdf_generator_1.default.generateInvoicesReportPDF(plainInvoices, filters);
         const filename = `invoices-report-${Date.now()}.pdf`;
-        const filepath = await PDFGenerator.savePDFToFile(pdfBuffer, filename);
+        const filepath = await pdf_generator_1.default.savePDFToFile(pdfBuffer, filename);
         return { buffer: pdfBuffer, filepath, filename, format: 'pdf' };
     }
     return { data: plainInvoices, format: 'json' };
 };
-export const getOverdueInvoices = async (options) => {
+exports.generateInvoicesReport = generateInvoicesReport;
+const getOverdueInvoices = async (options) => {
     const { page = 1, limit = 10 } = options;
     const skip = (page - 1) * limit;
-    const where = { status: InvoiceStatus.UNPAID, dueDate: { $lt: new Date() } };
+    const where = { status: enums_1.InvoiceStatus.UNPAID, dueDate: { $lt: new Date() } };
     const [invoices, total] = await Promise.all([
-        Invoice.find(where)
+        invoice_model_1.Invoice.find(where)
             .populate(invoicePopulate)
             .sort({ dueDate: 1 })
             .skip(skip)
             .limit(limit),
-        Invoice.countDocuments(where),
+        invoice_model_1.Invoice.countDocuments(where),
     ]);
     return { invoices, pagination: { page, limit, total, pages: Math.ceil(total / limit) } };
 };
-export const getInvoiceStats = async () => {
+exports.getOverdueInvoices = getOverdueInvoices;
+const getInvoiceStats = async () => {
     const [totalInvoices, paidInvoices, unpaidInvoices, overdueInvoices, revenueResults] = await Promise.all([
-        Invoice.countDocuments(),
-        Invoice.countDocuments({ status: InvoiceStatus.PAID }),
-        Invoice.countDocuments({ status: InvoiceStatus.UNPAID }),
-        Invoice.countDocuments({ status: InvoiceStatus.UNPAID, dueDate: { $lt: new Date() } }),
-        Invoice.aggregate([
+        invoice_model_1.Invoice.countDocuments(),
+        invoice_model_1.Invoice.countDocuments({ status: enums_1.InvoiceStatus.PAID }),
+        invoice_model_1.Invoice.countDocuments({ status: enums_1.InvoiceStatus.UNPAID }),
+        invoice_model_1.Invoice.countDocuments({ status: enums_1.InvoiceStatus.UNPAID, dueDate: { $lt: new Date() } }),
+        invoice_model_1.Invoice.aggregate([
             {
                 $group: {
                     _id: '$status',
@@ -168,7 +182,7 @@ export const getInvoiceStats = async () => {
     const totalRevenue = revenueResults.find((r) => r._id === 'PAID')?.total ?? 0;
     const unpaidAmount = revenueResults.find((r) => r._id === 'UNPAID')?.total ?? 0;
     const twelveMonthsAgo = new Date(new Date().getFullYear(), new Date().getMonth() - 11, 1);
-    const monthlyRevenueRaw = await Invoice.aggregate([
+    const monthlyRevenueRaw = await invoice_model_1.Invoice.aggregate([
         { $match: { status: 'PAID', issuedAt: { $gte: twelveMonthsAgo } } },
         {
             $group: {
@@ -187,6 +201,8 @@ export const getInvoiceStats = async () => {
     }));
     return { totalInvoices, paidInvoices, unpaidInvoices, overdueInvoices, totalRevenue, unpaidAmount, monthlyRevenue };
 };
-export const markInvoiceAsPaid = async (invoiceId) => {
-    return Invoice.findByIdAndUpdate(invoiceId, { status: 'PAID' }, { new: true }).populate(invoicePopulate);
+exports.getInvoiceStats = getInvoiceStats;
+const markInvoiceAsPaid = async (invoiceId) => {
+    return invoice_model_1.Invoice.findByIdAndUpdate(invoiceId, { status: 'PAID' }, { new: true }).populate(invoicePopulate);
 };
+exports.markInvoiceAsPaid = markInvoiceAsPaid;

@@ -1,7 +1,10 @@
-import { getDashboardStats, getRecentBookings, getDailyOverview, } from '../services/admin.dashboard.service';
-export const getDashboardStatsController = async (_req, res, next) => {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getDailyOverviewController = exports.getRecentBookingsController = exports.getDashboardStatsController = void 0;
+const admin_dashboard_service_1 = require("../services/admin.dashboard.service");
+const getDashboardStatsController = async (_req, res, next) => {
     try {
-        const stats = await getDashboardStats();
+        const stats = await (0, admin_dashboard_service_1.getDashboardStats)();
         return res.status(200).json({
             data: stats,
             message: 'Dashboard statistics retrieved successfully.',
@@ -11,7 +14,8 @@ export const getDashboardStatsController = async (_req, res, next) => {
         next(error);
     }
 };
-export const getRecentBookingsController = async (req, res, next) => {
+exports.getDashboardStatsController = getDashboardStatsController;
+const getRecentBookingsController = async (req, res, next) => {
     try {
         const userId = req.user?.id;
         if (!userId) {
@@ -23,19 +27,21 @@ export const getRecentBookingsController = async (req, res, next) => {
                 message: 'Invalid limit. Must be a number between 1 and 12.',
             });
         }
-        const bookings = await getRecentBookings(limit);
+        const bookings = await (0, admin_dashboard_service_1.getRecentBookings)(limit);
         return res.status(200).json(bookings);
     }
     catch (error) {
         next(error);
     }
 };
-export const getDailyOverviewController = async (_, res, next) => {
+exports.getRecentBookingsController = getRecentBookingsController;
+const getDailyOverviewController = async (_, res, next) => {
     try {
-        const overview = await getDailyOverview();
+        const overview = await (0, admin_dashboard_service_1.getDailyOverview)();
         return res.status(200).json(overview);
     }
     catch (error) {
         next(error);
     }
 };
+exports.getDailyOverviewController = getDailyOverviewController;

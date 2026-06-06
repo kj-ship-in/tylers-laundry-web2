@@ -1,10 +1,15 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import fs from 'fs/promises';
-import path from 'path';
-import ExcelJS from 'exceljs';
+const promises_1 = __importDefault(require("fs/promises"));
+const path_1 = __importDefault(require("path"));
+const exceljs_1 = __importDefault(require("exceljs"));
 const ExcelReportGenerator = {
     async generateReceiptsReport(receipts, filters) {
-        const workbook = new ExcelJS.Workbook();
+        const workbook = new exceljs_1.default.Workbook();
         const worksheet = workbook.addWorksheet('Receipts Report');
         worksheet.columns = [
             { header: 'Receipt No', key: 'receiptNo', width: 15 },
@@ -43,7 +48,7 @@ const ExcelReportGenerator = {
         return await workbook.xlsx.writeBuffer();
     },
     async generateInvoicesReport(invoices, filters) {
-        const workbook = new ExcelJS.Workbook();
+        const workbook = new exceljs_1.default.Workbook();
         const worksheet = workbook.addWorksheet('Invoices Report');
         worksheet.columns = [
             { header: 'Invoice No', key: 'invoiceNo', width: 15 },
@@ -91,7 +96,7 @@ const ExcelReportGenerator = {
         return await workbook.xlsx.writeBuffer();
     },
     async generateFinancialReport(data) {
-        const workbook = new ExcelJS.Workbook();
+        const workbook = new exceljs_1.default.Workbook();
         const summarySheet = workbook.addWorksheet('Financial Summary');
         const paymentsSheet = workbook.addWorksheet('Payments Detail');
         const revenueSheet = workbook.addWorksheet('Revenue by Service');
@@ -101,7 +106,7 @@ const ExcelReportGenerator = {
         return await workbook.xlsx.writeBuffer();
     },
     async generateCustomerReport(customers, filters) {
-        const workbook = new ExcelJS.Workbook();
+        const workbook = new exceljs_1.default.Workbook();
         const worksheet = workbook.addWorksheet('Customer Report');
         worksheet.columns = [
             { header: 'Customer ID', key: 'id', width: 12 },
@@ -281,10 +286,10 @@ const ExcelReportGenerator = {
     },
     async saveExcelToFile(excelBuffer, filename) {
         const uploadsDir = 'uploads/reports';
-        await fs.mkdir(uploadsDir, { recursive: true });
-        const filepath = path.join(uploadsDir, filename);
-        await fs.writeFile(filepath, excelBuffer);
+        await promises_1.default.mkdir(uploadsDir, { recursive: true });
+        const filepath = path_1.default.join(uploadsDir, filename);
+        await promises_1.default.writeFile(filepath, excelBuffer);
         return filepath;
     },
 };
-export default ExcelReportGenerator;
+exports.default = ExcelReportGenerator;

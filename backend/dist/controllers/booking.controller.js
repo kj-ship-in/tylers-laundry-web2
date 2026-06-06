@@ -1,13 +1,49 @@
-import * as bookingService from '../services/booking.service';
-import * as serviceService from '../services/service.service';
-import { createBookingSchema, schedulePickupSchema, adminCreateBookingSchema, } from '../validators/booking.schema';
-export const createBookingController = async (req, res, next) => {
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.updateBookingStatusController = exports.deleteBookingController = exports.updateBookingController = exports.getBookingByIdController = exports.getBookingsByUserIdController = exports.getAllBookingsController = exports.adminCreateBookingController = exports.schedulePickupController = exports.createBookingController = void 0;
+const bookingService = __importStar(require("../services/booking.service"));
+const serviceService = __importStar(require("../services/service.service"));
+const booking_schema_1 = require("../validators/booking.schema");
+const createBookingController = async (req, res, next) => {
     try {
         const userId = req.user?.id;
         if (!userId) {
             return res.status(401).json({ message: 'Unauthorized' });
         }
-        const parsedRequest = createBookingSchema.safeParse({
+        const parsedRequest = booking_schema_1.createBookingSchema.safeParse({
             ...req.body,
             userId,
         });
@@ -25,13 +61,14 @@ export const createBookingController = async (req, res, next) => {
         next(error);
     }
 };
-export const schedulePickupController = async (req, res, next) => {
+exports.createBookingController = createBookingController;
+const schedulePickupController = async (req, res, next) => {
     try {
         const userId = req.user?.id;
         if (!userId) {
             return res.status(401).json({ message: 'Unauthorized' });
         }
-        const parsedRequest = schedulePickupSchema.safeParse(req.body);
+        const parsedRequest = booking_schema_1.schedulePickupSchema.safeParse(req.body);
         if (!parsedRequest.success) {
             return res.status(400).json({
                 message: parsedRequest.error,
@@ -58,9 +95,10 @@ export const schedulePickupController = async (req, res, next) => {
         next(error);
     }
 };
-export const adminCreateBookingController = async (req, res, next) => {
+exports.schedulePickupController = schedulePickupController;
+const adminCreateBookingController = async (req, res, next) => {
     try {
-        const parsedRequest = adminCreateBookingSchema.safeParse(req.body);
+        const parsedRequest = booking_schema_1.adminCreateBookingSchema.safeParse(req.body);
         if (!parsedRequest.success) {
             return res.status(400).json({
                 message: parsedRequest.error,
@@ -76,7 +114,8 @@ export const adminCreateBookingController = async (req, res, next) => {
         next(error);
     }
 };
-export const getAllBookingsController = async (_, res, next) => {
+exports.adminCreateBookingController = adminCreateBookingController;
+const getAllBookingsController = async (_, res, next) => {
     try {
         const bookings = await bookingService.getAllBookings();
         res.status(200).json(bookings);
@@ -85,7 +124,8 @@ export const getAllBookingsController = async (_, res, next) => {
         next(error);
     }
 };
-export const getBookingsByUserIdController = async (req, res, next) => {
+exports.getAllBookingsController = getAllBookingsController;
+const getBookingsByUserIdController = async (req, res, next) => {
     try {
         const userId = req.user?.id;
         if (!userId) {
@@ -100,7 +140,8 @@ export const getBookingsByUserIdController = async (req, res, next) => {
         next(error);
     }
 };
-export const getBookingByIdController = async (req, res, next) => {
+exports.getBookingsByUserIdController = getBookingsByUserIdController;
+const getBookingByIdController = async (req, res, next) => {
     try {
         const id = req.params.id;
         const booking = await bookingService.getBookingById(id);
@@ -112,10 +153,11 @@ export const getBookingByIdController = async (req, res, next) => {
         next(error);
     }
 };
-export const updateBookingController = async (req, res, next) => {
+exports.getBookingByIdController = getBookingByIdController;
+const updateBookingController = async (req, res, next) => {
     try {
         const id = req.params.id;
-        const parsedRequest = createBookingSchema.safeParse(req.body);
+        const parsedRequest = booking_schema_1.createBookingSchema.safeParse(req.body);
         if (!parsedRequest.success) {
             return res.status(400).json({
                 message: parsedRequest.error,
@@ -130,7 +172,8 @@ export const updateBookingController = async (req, res, next) => {
         next(error);
     }
 };
-export const deleteBookingController = async (req, res, next) => {
+exports.updateBookingController = updateBookingController;
+const deleteBookingController = async (req, res, next) => {
     try {
         const id = req.params.id;
         await bookingService.deleteBooking(id);
@@ -140,7 +183,8 @@ export const deleteBookingController = async (req, res, next) => {
         next(error);
     }
 };
-export const updateBookingStatusController = async (req, res, next) => {
+exports.deleteBookingController = deleteBookingController;
+const updateBookingStatusController = async (req, res, next) => {
     try {
         const id = req.params.id;
         const { status } = req.body;
@@ -171,3 +215,4 @@ export const updateBookingStatusController = async (req, res, next) => {
         next(error);
     }
 };
+exports.updateBookingStatusController = updateBookingStatusController;

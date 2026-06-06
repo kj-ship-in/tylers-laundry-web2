@@ -1,6 +1,11 @@
-import cron from 'node-cron';
-import logger from '../utils/logger';
-import { ReportingService } from './reporting.service';
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const node_cron_1 = __importDefault(require("node-cron"));
+const logger_1 = __importDefault(require("../utils/logger"));
+const reporting_service_1 = require("./reporting.service");
 const CronJobService = {
     isInitialized: false,
     jobs: new Map(),
@@ -10,62 +15,62 @@ const CronJobService = {
      */
     async initializeCronJobs() {
         if (CronJobService.isInitialized) {
-            logger.warn('Cron jobs already initialized');
+            logger_1.default.warn('Cron jobs already initialized');
             return;
         }
-        logger.info('Initializing cron jobs...');
+        logger_1.default.info('Initializing cron jobs...');
         // Daily report generation at 6:00 AM
-        const dailyTask = cron.schedule('0 6 * * *', async () => {
+        const dailyTask = node_cron_1.default.schedule('0 6 * * *', async () => {
             try {
-                logger.info('Running daily report generation...');
+                logger_1.default.info('Running daily report generation...');
                 CronJobService.lastRuns.set('daily-reports', new Date());
                 await CronJobService.generateDailyReports();
-                logger.info('Daily reports generated successfully');
+                logger_1.default.info('Daily reports generated successfully');
             }
             catch (error) {
-                logger.error('Error generating daily reports:', error);
+                logger_1.default.error('Error generating daily reports:', error);
             }
         }, {
             timezone: 'UTC',
         });
         // Weekly report generation every Monday at 7:00 AM
-        const weeklyTask = cron.schedule('0 7 * * 1', async () => {
+        const weeklyTask = node_cron_1.default.schedule('0 7 * * 1', async () => {
             try {
-                logger.info('Running weekly report generation...');
+                logger_1.default.info('Running weekly report generation...');
                 CronJobService.lastRuns.set('weekly-reports', new Date());
                 await CronJobService.generateWeeklyReports();
-                logger.info('Weekly reports generated successfully');
+                logger_1.default.info('Weekly reports generated successfully');
             }
             catch (error) {
-                logger.error('Error generating weekly reports:', error);
+                logger_1.default.error('Error generating weekly reports:', error);
             }
         }, {
             timezone: 'UTC',
         });
         // Monthly report generation on the 1st at 8:00 AM
-        const monthlyTask = cron.schedule('0 8 1 * *', async () => {
+        const monthlyTask = node_cron_1.default.schedule('0 8 1 * *', async () => {
             try {
-                logger.info('Running monthly report generation...');
+                logger_1.default.info('Running monthly report generation...');
                 CronJobService.lastRuns.set('monthly-reports', new Date());
                 await CronJobService.generateMonthlyReports();
-                logger.info('Monthly reports generated successfully');
+                logger_1.default.info('Monthly reports generated successfully');
             }
             catch (error) {
-                logger.error('Error generating monthly reports:', error);
+                logger_1.default.error('Error generating monthly reports:', error);
             }
         }, {
             timezone: 'UTC',
         });
         // Cleanup old data every Sunday at 2:00 AM
-        const cleanupTask = cron.schedule('0 2 * * 0', async () => {
+        const cleanupTask = node_cron_1.default.schedule('0 2 * * 0', async () => {
             try {
-                logger.info('Running database cleanup...');
+                logger_1.default.info('Running database cleanup...');
                 CronJobService.lastRuns.set('cleanup-old-data', new Date());
                 await CronJobService.cleanupOldData();
-                logger.info('Database cleanup completed successfully');
+                logger_1.default.info('Database cleanup completed successfully');
             }
             catch (error) {
-                logger.error('Error during database cleanup:', error);
+                logger_1.default.error('Error during database cleanup:', error);
             }
         }, {
             timezone: 'UTC',
@@ -81,23 +86,23 @@ const CronJobService = {
         await monthlyTask.start();
         await cleanupTask.start();
         CronJobService.isInitialized = true;
-        logger.info('All cron jobs initialized and started');
+        logger_1.default.info('All cron jobs initialized and started');
     },
     /**
      * Stop all scheduled tasks
      */
     async stopCronJobs() {
         if (!CronJobService.isInitialized) {
-            logger.warn('Cron jobs not initialized');
+            logger_1.default.warn('Cron jobs not initialized');
             return;
         }
-        logger.info('Stopping all cron jobs...');
+        logger_1.default.info('Stopping all cron jobs...');
         for (const [name, task] of CronJobService.jobs.entries()) {
             await task.stop();
-            logger.info(`Stopped ${name} cron job`);
+            logger_1.default.info(`Stopped ${name} cron job`);
         }
         CronJobService.isInitialized = false;
-        logger.info('All cron jobs stopped');
+        logger_1.default.info('All cron jobs stopped');
     },
     /**
      * Generate daily reports
@@ -107,7 +112,7 @@ const CronJobService = {
         const today = new Date();
         const yesterday = new Date(today);
         yesterday.setDate(yesterday.getDate() - 1);
-        await ReportingService.generateFinancialReport({
+        await reporting_service_1.ReportingService.generateFinancialReport({
             startDate: yesterday.toISOString(),
             endDate: today.toISOString(),
             format: 'excel',
@@ -120,12 +125,12 @@ const CronJobService = {
         const today = new Date();
         const weekAgo = new Date(today);
         weekAgo.setDate(weekAgo.getDate() - 7);
-        await ReportingService.generateFinancialReport({
+        await reporting_service_1.ReportingService.generateFinancialReport({
             startDate: weekAgo.toISOString(),
             endDate: today.toISOString(),
             format: 'excel',
         });
-        await ReportingService.generateCustomerReport({
+        await reporting_service_1.ReportingService.generateCustomerReport({
             startDate: weekAgo.toISOString(),
             endDate: today.toISOString(),
             format: 'excel',
@@ -138,17 +143,17 @@ const CronJobService = {
         const today = new Date();
         const monthAgo = new Date(today);
         monthAgo.setMonth(monthAgo.getMonth() - 1);
-        await ReportingService.generateFinancialReport({
+        await reporting_service_1.ReportingService.generateFinancialReport({
             startDate: monthAgo.toISOString(),
             endDate: today.toISOString(),
             format: 'excel',
         });
-        await ReportingService.generateCustomerReport({
+        await reporting_service_1.ReportingService.generateCustomerReport({
             startDate: monthAgo.toISOString(),
             endDate: today.toISOString(),
             format: 'excel',
         });
-        await ReportingService.generateServicePerformanceReport({
+        await reporting_service_1.ReportingService.generateServicePerformanceReport({
             startDate: monthAgo.toISOString(),
             endDate: today.toISOString(),
             format: 'excel',
@@ -160,7 +165,7 @@ const CronJobService = {
     async cleanupOldData() {
         // This would typically clean up old logs, temporary files, etc.
         // For now, just log the action
-        logger.info('Performing database cleanup (placeholder - implement based on requirements)');
+        logger_1.default.info('Performing database cleanup (placeholder - implement based on requirements)');
         // Example cleanup operations:
         // - Delete old log files
         // - Archive old completed bookings
@@ -204,4 +209,4 @@ const CronJobService = {
     },
 };
 // Export for use in main application
-export default CronJobService;
+exports.default = CronJobService;

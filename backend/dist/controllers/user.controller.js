@@ -1,27 +1,34 @@
-import { getCustomersService, getStaffsService, getCurrentUserService, getUserStatsService, updateProfileDetailsService, updateProfilePictureService, updateUserRoleService, } from '../services/user.service';
-import logger from '../utils/logger';
-import { UpdateProfileDetailsSchema } from '../validators/user.schema';
-export const getCurrentUserController = async (req, res, next) => {
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getUserStatsController = exports.updateUserRoleController = exports.getStaffsController = exports.getCustomersController = exports.updateProfilePictureController = exports.updateProfileDetailsController = exports.getCurrentUserController = void 0;
+const user_service_1 = require("../services/user.service");
+const logger_1 = __importDefault(require("../utils/logger"));
+const user_schema_1 = require("../validators/user.schema");
+const getCurrentUserController = async (req, res, next) => {
     try {
         const userId = req.user?.id;
         if (!userId) {
             return next(new Error('Unauthorized'));
         }
-        const user = await getCurrentUserService(userId);
+        const user = await (0, user_service_1.getCurrentUserService)(userId);
         res.status(200).json(user);
     }
     catch (error) {
         next(error);
     }
 };
-export const updateProfileDetailsController = async (req, res, next) => {
+exports.getCurrentUserController = getCurrentUserController;
+const updateProfileDetailsController = async (req, res, next) => {
     try {
         const userId = req.user?.id;
         if (!userId) {
             return next(new Error('Unauthorized'));
         }
-        const data = UpdateProfileDetailsSchema.parse(req.body);
-        const updatedUser = await updateProfileDetailsService(userId, data);
+        const data = user_schema_1.UpdateProfileDetailsSchema.parse(req.body);
+        const updatedUser = await (0, user_service_1.updateProfileDetailsService)(userId, data);
         const response = {
             success: true,
             message: 'Profile updated successfully',
@@ -33,7 +40,8 @@ export const updateProfileDetailsController = async (req, res, next) => {
         next(error);
     }
 };
-export const updateProfilePictureController = async (req, res, next) => {
+exports.updateProfileDetailsController = updateProfileDetailsController;
+const updateProfilePictureController = async (req, res, next) => {
     try {
         const userId = req.user?.id;
         if (!userId) {
@@ -48,7 +56,7 @@ export const updateProfilePictureController = async (req, res, next) => {
             return;
         }
         const profileUrl = `/uploads/${req.file.filename}`;
-        const updatedUser = await updateProfilePictureService(userId, profileUrl);
+        const updatedUser = await (0, user_service_1.updateProfilePictureService)(userId, profileUrl);
         const response = {
             success: true,
             message: 'Profile picture updated successfully',
@@ -60,7 +68,8 @@ export const updateProfilePictureController = async (req, res, next) => {
         next(error);
     }
 };
-export const getCustomersController = async (req, res, next) => {
+exports.updateProfilePictureController = updateProfilePictureController;
+const getCustomersController = async (req, res, next) => {
     try {
         const page = parseInt(req.query.page) ?? 1;
         const limit = parseInt(req.query.limit) ?? 10;
@@ -74,7 +83,7 @@ export const getCustomersController = async (req, res, next) => {
             res.status(400).json(response);
             return;
         }
-        const result = await getCustomersService({
+        const result = await (0, user_service_1.getCustomersService)({
             page,
             limit,
             search,
@@ -94,11 +103,12 @@ export const getCustomersController = async (req, res, next) => {
         res.status(200).json(response);
     }
     catch (error) {
-        logger.error('Error in getCustomersController:', error);
+        logger_1.default.error('Error in getCustomersController:', error);
         next(error);
     }
 };
-export const getStaffsController = async (req, res, next) => {
+exports.getCustomersController = getCustomersController;
+const getStaffsController = async (req, res, next) => {
     try {
         const page = parseInt(req.query.page) ?? 1;
         const limit = parseInt(req.query.limit) ?? 10;
@@ -112,7 +122,7 @@ export const getStaffsController = async (req, res, next) => {
             res.status(400).json(response);
             return;
         }
-        const result = await getStaffsService({
+        const result = await (0, user_service_1.getStaffsService)({
             page,
             limit,
             search,
@@ -132,11 +142,12 @@ export const getStaffsController = async (req, res, next) => {
         res.status(200).json(response);
     }
     catch (error) {
-        logger.error('Error in getStaffsController:', error);
+        logger_1.default.error('Error in getStaffsController:', error);
         next(error);
     }
 };
-export const updateUserRoleController = async (req, res, next) => {
+exports.getStaffsController = getStaffsController;
+const updateUserRoleController = async (req, res, next) => {
     try {
         const userId = req.params.id;
         const { role } = req.body;
@@ -157,14 +168,14 @@ export const updateUserRoleController = async (req, res, next) => {
             });
             return;
         }
-        const updatedUser = await updateUserRoleService(userId, role);
+        const updatedUser = await (0, user_service_1.updateUserRoleService)(userId, role);
         res.status(200).json({
             message: `User role updated to ${role} successfully`,
             data: updatedUser,
         });
     }
     catch (error) {
-        logger.error('Error in updateUserTypeController:', error);
+        logger_1.default.error('Error in updateUserTypeController:', error);
         if (error instanceof Error && error.message === 'User not found') {
             res.status(404).json({ message: 'User not found' });
             return;
@@ -177,16 +188,18 @@ export const updateUserRoleController = async (req, res, next) => {
         next(error);
     }
 };
-export const getUserStatsController = async (_, res, next) => {
+exports.updateUserRoleController = updateUserRoleController;
+const getUserStatsController = async (_, res, next) => {
     try {
-        const stats = await getUserStatsService();
+        const stats = await (0, user_service_1.getUserStatsService)();
         res.status(200).json({
             message: 'User statistics retrieved successfully',
             data: stats,
         });
     }
     catch (error) {
-        logger.error('Error in getUserStatsController:', error);
+        logger_1.default.error('Error in getUserStatsController:', error);
         next(error);
     }
 };
+exports.getUserStatsController = getUserStatsController;

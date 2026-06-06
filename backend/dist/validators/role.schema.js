@@ -1,36 +1,39 @@
-import { z } from 'zod';
-import { Permission } from '../types/enums';
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.UserIdSchema = exports.RoleIdSchema = exports.UserPermissionsSchema = exports.AssignRoleToUserSchema = exports.AssignPermissionsSchema = exports.UpdateRoleSchema = exports.CreateRoleSchema = void 0;
+const zod_1 = require("zod");
+const enums_1 = require("../types/enums");
 const mongoIdRegex = /^[0-9a-fA-F]{24}$/;
-export const CreateRoleSchema = z.object({
-    name: z.string().min(1, 'Name is required'),
-    description: z.string().optional(),
-    permissions: z
-        .array(z.nativeEnum(Permission))
+exports.CreateRoleSchema = zod_1.z.object({
+    name: zod_1.z.string().min(1, 'Name is required'),
+    description: zod_1.z.string().optional(),
+    permissions: zod_1.z
+        .array(zod_1.z.nativeEnum(enums_1.Permission))
         .min(1, 'At least one permission is required'),
 });
-export const UpdateRoleSchema = z.object({
-    name: z.string().min(1, 'Name is required').optional(),
-    description: z.string().optional(),
-    permissions: z.array(z.nativeEnum(Permission)).optional(),
-    isActive: z.boolean().optional(),
+exports.UpdateRoleSchema = zod_1.z.object({
+    name: zod_1.z.string().min(1, 'Name is required').optional(),
+    description: zod_1.z.string().optional(),
+    permissions: zod_1.z.array(zod_1.z.nativeEnum(enums_1.Permission)).optional(),
+    isActive: zod_1.z.boolean().optional(),
 });
-export const AssignPermissionsSchema = z.object({
-    permissions: z
-        .array(z.nativeEnum(Permission))
+exports.AssignPermissionsSchema = zod_1.z.object({
+    permissions: zod_1.z
+        .array(zod_1.z.nativeEnum(enums_1.Permission))
         .min(1, 'At least one permission is required'),
 });
-export const AssignRoleToUserSchema = z.object({
-    userId: z.string().regex(mongoIdRegex, 'Invalid user ID'),
-    roleId: z.string().regex(mongoIdRegex, 'Invalid role ID'),
+exports.AssignRoleToUserSchema = zod_1.z.object({
+    userId: zod_1.z.string().regex(mongoIdRegex, 'Invalid user ID'),
+    roleId: zod_1.z.string().regex(mongoIdRegex, 'Invalid role ID'),
 });
-export const UserPermissionsSchema = z.object({
-    permissions: z
-        .array(z.nativeEnum(Permission))
+exports.UserPermissionsSchema = zod_1.z.object({
+    permissions: zod_1.z
+        .array(zod_1.z.nativeEnum(enums_1.Permission))
         .min(1, 'At least one permission is required'),
 });
-export const RoleIdSchema = z.object({
-    id: z.string().regex(mongoIdRegex, 'Invalid role ID'),
+exports.RoleIdSchema = zod_1.z.object({
+    id: zod_1.z.string().regex(mongoIdRegex, 'Invalid role ID'),
 });
-export const UserIdSchema = z.object({
-    userId: z.string().regex(mongoIdRegex, 'Invalid user ID'),
+exports.UserIdSchema = zod_1.z.object({
+    userId: zod_1.z.string().regex(mongoIdRegex, 'Invalid user ID'),
 });

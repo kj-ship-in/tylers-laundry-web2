@@ -1,8 +1,15 @@
-import sgMail from '@sendgrid/mail';
-sgMail.setApiKey(process.env.SENDGRID_API_KEY ?? '');
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.sendBookingConfirmationEmail = exports.sendWelcomeEmail = exports.getWelcomeEmailTemplate = void 0;
+exports.sendEmail = sendEmail;
+const mail_1 = __importDefault(require("@sendgrid/mail"));
+mail_1.default.setApiKey(process.env.SENDGRID_API_KEY ?? '');
 const FROM_EMAIL = process.env.SMTP_FROM ?? '';
-export async function sendEmail({ to, subject, text, code, expiresAt, }) {
-    await sgMail.send({
+async function sendEmail({ to, subject, text, code, expiresAt, }) {
+    await mail_1.default.send({
         from: { name: "Tyler's Laundry", email: FROM_EMAIL },
         to,
         subject,
@@ -31,7 +38,7 @@ export async function sendEmail({ to, subject, text, code, expiresAt, }) {
         text: `Your Tyler's Laundry ${text} is: ${code}. This code is valid for the next ${expiresAt}. Please do not share this code with anyone.`,
     });
 }
-export const getWelcomeEmailTemplate = (userName) => {
+const getWelcomeEmailTemplate = (userName) => {
     return {
         html: `
       <!DOCTYPE html>
@@ -130,10 +137,11 @@ export const getWelcomeEmailTemplate = (userName) => {
     `,
     };
 };
-export const sendWelcomeEmail = async (email, userName) => {
+exports.getWelcomeEmailTemplate = getWelcomeEmailTemplate;
+const sendWelcomeEmail = async (email, userName) => {
     try {
-        const { html, text } = getWelcomeEmailTemplate(userName);
-        await sgMail.send({
+        const { html, text } = (0, exports.getWelcomeEmailTemplate)(userName);
+        await mail_1.default.send({
             from: { name: "Tyler's Laundry", email: FROM_EMAIL },
             to: email,
             subject: "Welcome to Tyler's Laundry!",
@@ -150,9 +158,10 @@ export const sendWelcomeEmail = async (email, userName) => {
         throw new Error('Failed to send welcome email');
     }
 };
-export const sendBookingConfirmationEmail = async (email, customerName, serviceTitle, pickupAddress, deliveryAddress, bookingDate, pickupTime, totalAmount, bookingId) => {
+exports.sendWelcomeEmail = sendWelcomeEmail;
+const sendBookingConfirmationEmail = async (email, customerName, serviceTitle, pickupAddress, deliveryAddress, bookingDate, pickupTime, totalAmount, bookingId) => {
     try {
-        await sgMail.send({
+        await mail_1.default.send({
             from: { name: "Tyler's Laundry", email: FROM_EMAIL },
             to: email,
             subject: 'Booking Confirmation - Tylers Laundry',
@@ -333,3 +342,4 @@ export const sendBookingConfirmationEmail = async (email, customerName, serviceT
         throw new Error('Failed to send booking confirmation email');
     }
 };
+exports.sendBookingConfirmationEmail = sendBookingConfirmationEmail;

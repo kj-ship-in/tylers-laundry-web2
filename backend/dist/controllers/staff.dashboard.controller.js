@@ -1,7 +1,10 @@
-import { getStaffDashboardStats, getStaffRecentBookings, getStaffDailyOverview, } from '../services/staff.dashboard.service';
-export const getStaffDashboardStatsController = async (_req, res, next) => {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getStaffDailyOverviewController = exports.getStaffRecentBookingsController = exports.getStaffDashboardStatsController = void 0;
+const staff_dashboard_service_1 = require("../services/staff.dashboard.service");
+const getStaffDashboardStatsController = async (_req, res, next) => {
     try {
-        const stats = await getStaffDashboardStats();
+        const stats = await (0, staff_dashboard_service_1.getStaffDashboardStats)();
         return res.status(200).json({
             data: stats,
             message: 'Staff dashboard statistics retrieved successfully.',
@@ -11,7 +14,8 @@ export const getStaffDashboardStatsController = async (_req, res, next) => {
         next(error);
     }
 };
-export const getStaffRecentBookingsController = async (req, res, next) => {
+exports.getStaffDashboardStatsController = getStaffDashboardStatsController;
+const getStaffRecentBookingsController = async (req, res, next) => {
     try {
         const userId = req.user?.id;
         if (!userId) {
@@ -23,19 +27,21 @@ export const getStaffRecentBookingsController = async (req, res, next) => {
                 message: 'Invalid limit. Must be a number between 1 and 12.',
             });
         }
-        const bookings = await getStaffRecentBookings(limit);
+        const bookings = await (0, staff_dashboard_service_1.getStaffRecentBookings)(limit);
         return res.status(200).json(bookings);
     }
     catch (error) {
         next(error);
     }
 };
-export const getStaffDailyOverviewController = async (_, res, next) => {
+exports.getStaffRecentBookingsController = getStaffRecentBookingsController;
+const getStaffDailyOverviewController = async (_, res, next) => {
     try {
-        const overview = await getStaffDailyOverview();
+        const overview = await (0, staff_dashboard_service_1.getStaffDailyOverview)();
         return res.status(200).json(overview);
     }
     catch (error) {
         next(error);
     }
 };
+exports.getStaffDailyOverviewController = getStaffDailyOverviewController;

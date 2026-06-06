@@ -1,8 +1,44 @@
-import * as receiptService from '../services/receipt.service';
-import { createReceiptSchema, receiptSchema, updateReceiptSchema, } from '../validators/receipt.schema';
-export const createReceiptController = async (req, res, next) => {
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getReceiptStatsController = exports.generateReceiptsReportController = exports.generateReceiptPDFController = exports.deleteReceiptController = exports.updateReceiptController = exports.getReceiptByIdController = exports.getAllReceiptsController = exports.createReceiptController = void 0;
+const receiptService = __importStar(require("../services/receipt.service"));
+const receipt_schema_1 = require("../validators/receipt.schema");
+const createReceiptController = async (req, res, next) => {
     try {
-        const parsedRequest = createReceiptSchema.safeParse(req.body);
+        const parsedRequest = receipt_schema_1.createReceiptSchema.safeParse(req.body);
         if (!parsedRequest.success) {
             return res.status(400).json({
                 message: 'Validation failed',
@@ -19,7 +55,8 @@ export const createReceiptController = async (req, res, next) => {
         next(error);
     }
 };
-export const getAllReceiptsController = async (req, res, next) => {
+exports.createReceiptController = createReceiptController;
+const getAllReceiptsController = async (req, res, next) => {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
@@ -45,9 +82,10 @@ export const getAllReceiptsController = async (req, res, next) => {
         next(error);
     }
 };
-export const getReceiptByIdController = async (req, res, next) => {
+exports.getAllReceiptsController = getAllReceiptsController;
+const getReceiptByIdController = async (req, res, next) => {
     try {
-        const parsedId = receiptSchema.safeParse({
+        const parsedId = receipt_schema_1.receiptSchema.safeParse({
             receiptId: req.params.id,
         });
         if (!parsedId.success) {
@@ -69,10 +107,11 @@ export const getReceiptByIdController = async (req, res, next) => {
         next(error);
     }
 };
-export const updateReceiptController = async (req, res, next) => {
+exports.getReceiptByIdController = getReceiptByIdController;
+const updateReceiptController = async (req, res, next) => {
     try {
         const id = req.params.id;
-        const parsed = updateReceiptSchema.safeParse(req.body);
+        const parsed = receipt_schema_1.updateReceiptSchema.safeParse(req.body);
         if (!parsed.success) {
             return res.status(400).json({
                 message: 'Validation failed',
@@ -89,7 +128,8 @@ export const updateReceiptController = async (req, res, next) => {
         next(error);
     }
 };
-export const deleteReceiptController = async (req, res, next) => {
+exports.updateReceiptController = updateReceiptController;
+const deleteReceiptController = async (req, res, next) => {
     try {
         const id = req.params.id;
         await receiptService.deleteReceipt(id);
@@ -99,7 +139,8 @@ export const deleteReceiptController = async (req, res, next) => {
         next(error);
     }
 };
-export const generateReceiptPDFController = async (req, res, next) => {
+exports.deleteReceiptController = deleteReceiptController;
+const generateReceiptPDFController = async (req, res, next) => {
     try {
         const receiptId = req.params.id;
         const result = await receiptService.generateReceiptPDF(receiptId);
@@ -114,7 +155,8 @@ export const generateReceiptPDFController = async (req, res, next) => {
         next(error);
     }
 };
-export const generateReceiptsReportController = async (req, res, next) => {
+exports.generateReceiptPDFController = generateReceiptPDFController;
+const generateReceiptsReportController = async (req, res, next) => {
     try {
         const format = req.query.format || 'excel';
         const startDate = req.query.startDate;
@@ -154,7 +196,8 @@ export const generateReceiptsReportController = async (req, res, next) => {
         next(error);
     }
 };
-export const getReceiptStatsController = async (_, res, next) => {
+exports.generateReceiptsReportController = generateReceiptsReportController;
+const getReceiptStatsController = async (_, res, next) => {
     try {
         const stats = await receiptService.getReceiptStats();
         res.status(200).json({
@@ -166,3 +209,4 @@ export const getReceiptStatsController = async (_, res, next) => {
         next(error);
     }
 };
+exports.getReceiptStatsController = getReceiptStatsController;

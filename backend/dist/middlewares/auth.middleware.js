@@ -1,20 +1,26 @@
-import { UserType } from '../types/enums';
-import { verifyToken } from '../utils/jwt';
-import logger from '../utils/logger';
-import { AuthenticationError, AuthorizationError } from './error.middleware';
-export const authMiddleware = (req, _res, next) => {
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.requireAuth = exports.requireStaff = exports.requireStaffOrAdmin = exports.requireAdmin = exports.authMiddleware = void 0;
+const enums_1 = require("../types/enums");
+const jwt_1 = require("../utils/jwt");
+const logger_1 = __importDefault(require("../utils/logger"));
+const error_middleware_1 = require("./error.middleware");
+const authMiddleware = (req, _res, next) => {
     try {
         const authHeader = req.headers.authorization;
         if (!authHeader?.startsWith('Bearer ')) {
-            throw new AuthenticationError('Authorization token missing or malformed');
+            throw new error_middleware_1.AuthenticationError('Authorization token missing or malformed');
         }
         const token = authHeader.split(' ')[1];
         if (!token) {
-            throw new AuthenticationError('Token is required');
+            throw new error_middleware_1.AuthenticationError('Token is required');
         }
-        const payload = verifyToken(token);
+        const payload = (0, jwt_1.verifyToken)(token);
         if (!payload.id || !payload.email || !payload.role) {
-            throw new AuthenticationError('Invalid token payload');
+            throw new error_middleware_1.AuthenticationError('Invalid token payload');
         }
         req.user = {
             id: payload.id,
@@ -24,55 +30,60 @@ export const authMiddleware = (req, _res, next) => {
             iat: payload.iat,
             exp: payload.exp,
         };
-        logger.debug(`User authenticated: ${payload.email} (${payload.role})`);
+        logger_1.default.debug(`User authenticated: ${payload.email} (${payload.role})`);
         next();
     }
     catch (error) {
         if (error.name === 'TokenExpiredError') {
-            next(new AuthenticationError('Token expired. Please login again.'));
+            next(new error_middleware_1.AuthenticationError('Token expired. Please login again.'));
         }
         else if (error.name === 'JsonWebTokenError') {
-            next(new AuthenticationError('Invalid token. Authentication failed.'));
+            next(new error_middleware_1.AuthenticationError('Invalid token. Authentication failed.'));
         }
-        else if (error instanceof AuthenticationError) {
+        else if (error instanceof error_middleware_1.AuthenticationError) {
             next(error);
         }
         else {
-            logger.error('Auth middleware error:', error);
-            next(new AuthenticationError('Authentication failed'));
+            logger_1.default.error('Auth middleware error:', error);
+            next(new error_middleware_1.AuthenticationError('Authentication failed'));
         }
     }
 };
-export const requireAdmin = (req, _res, next) => {
+exports.authMiddleware = authMiddleware;
+const requireAdmin = (req, _res, next) => {
     if (!req.user) {
-        return next(new AuthenticationError('Authentication required'));
+        return next(new error_middleware_1.AuthenticationError('Authentication required'));
     }
-    if (req.user.role !== UserType.ADMIN) {
-        return next(new AuthorizationError('Admin access required'));
+    if (req.user.role !== enums_1.UserType.ADMIN) {
+        return next(new error_middleware_1.AuthorizationError('Admin access required'));
     }
     next();
 };
-export const requireStaffOrAdmin = (req, _res, next) => {
+exports.requireAdmin = requireAdmin;
+const requireStaffOrAdmin = (req, _res, next) => {
     if (!req.user) {
-        return next(new AuthenticationError('Authentication required'));
+        return next(new error_middleware_1.AuthenticationError('Authentication required'));
     }
-    if (req.user.role !== UserType.ADMIN && req.user.role !== UserType.STAFF) {
-        return next(new AuthorizationError('Staff or Admin access required'));
+    if (req.user.role !== enums_1.UserType.ADMIN && req.user.role !== enums_1.UserType.STAFF) {
+        return next(new error_middleware_1.AuthorizationError('Staff or Admin access required'));
     }
     next();
 };
-export const requireStaff = (req, _res, next) => {
+exports.requireStaffOrAdmin = requireStaffOrAdmin;
+const requireStaff = (req, _res, next) => {
     if (!req.user) {
-        return next(new AuthenticationError('Authentication required'));
+        return next(new error_middleware_1.AuthenticationError('Authentication required'));
     }
-    if (req.user.role !== UserType.STAFF) {
-        return next(new AuthorizationError('Staff access required'));
+    if (req.user.role !== enums_1.UserType.STAFF) {
+        return next(new error_middleware_1.AuthorizationError('Staff access required'));
     }
     next();
 };
-export const requireAuth = (req, _res, next) => {
+exports.requireStaff = requireStaff;
+const requireAuth = (req, _res, next) => {
     if (!req.user) {
-        return next(new AuthenticationError('Authentication required'));
+        return next(new error_middleware_1.AuthenticationError('Authentication required'));
     }
     next();
 };
+exports.requireAuth = requireAuth;

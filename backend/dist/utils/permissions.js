@@ -1,51 +1,61 @@
-import { Permission } from '../types/enums';
-export const ROLE_HIERARCHY = {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getAllPermissions = exports.permissionsToStrings = exports.permissionToString = exports.getUserPermissions = exports.hasRoleLevel = exports.hasPermission = exports.getRolePermissions = exports.ROLE_PERMISSIONS = exports.ROLE_HIERARCHY = void 0;
+const enums_1 = require("../types/enums");
+exports.ROLE_HIERARCHY = {
     USER: 1,
     STAFF: 2,
     ADMIN: 3,
 };
-export const ROLE_PERMISSIONS = {
+exports.ROLE_PERMISSIONS = {
     USER: [
-        Permission.PROFILE_VIEW_OWN,
-        Permission.PROFILE_UPDATE_OWN,
-        Permission.BOOKING_VIEW_OWN,
-        Permission.BOOKING_CREATE,
-        Permission.TESTIMONIAL_VIEW,
-        Permission.TESTIMONIAL_CREATE,
-        Permission.SERVICE_VIEW,
+        enums_1.Permission.PROFILE_VIEW_OWN,
+        enums_1.Permission.PROFILE_UPDATE_OWN,
+        enums_1.Permission.BOOKING_VIEW_OWN,
+        enums_1.Permission.BOOKING_CREATE,
+        enums_1.Permission.TESTIMONIAL_VIEW,
+        enums_1.Permission.TESTIMONIAL_CREATE,
+        enums_1.Permission.SERVICE_VIEW,
     ],
     STAFF: [
-        Permission.PROFILE_VIEW_OWN,
-        Permission.PROFILE_UPDATE_OWN,
-        Permission.BOOKING_VIEW_ALL,
-        Permission.BOOKING_UPDATE_STATUS,
-        Permission.SERVICE_VIEW,
-        Permission.SERVICE_UPDATE,
-        Permission.ANALYTICS_VIEW,
-        Permission.REPORTS_VIEW,
-        Permission.USER_VIEW,
-        Permission.USER_UPDATE,
+        enums_1.Permission.PROFILE_VIEW_OWN,
+        enums_1.Permission.PROFILE_UPDATE_OWN,
+        enums_1.Permission.BOOKING_VIEW_ALL,
+        enums_1.Permission.BOOKING_UPDATE_STATUS,
+        enums_1.Permission.SERVICE_VIEW,
+        enums_1.Permission.SERVICE_UPDATE,
+        enums_1.Permission.ANALYTICS_VIEW,
+        enums_1.Permission.REPORTS_VIEW,
+        enums_1.Permission.USER_VIEW,
+        enums_1.Permission.USER_UPDATE,
     ],
-    ADMIN: [...Object.values(Permission)],
+    ADMIN: [...Object.values(enums_1.Permission)],
 };
-export const getRolePermissions = (role) => {
-    return ROLE_PERMISSIONS[role] ?? [];
+const getRolePermissions = (role) => {
+    return exports.ROLE_PERMISSIONS[role] ?? [];
 };
-export const hasPermission = (userPermissions, permission) => {
+exports.getRolePermissions = getRolePermissions;
+const hasPermission = (userPermissions, permission) => {
     return userPermissions.includes(permission);
 };
-export const hasRoleLevel = (userRole, requiredRole) => {
-    return ROLE_HIERARCHY[userRole] >= ROLE_HIERARCHY[requiredRole];
+exports.hasPermission = hasPermission;
+const hasRoleLevel = (userRole, requiredRole) => {
+    return exports.ROLE_HIERARCHY[userRole] >= exports.ROLE_HIERARCHY[requiredRole];
 };
-export const getUserPermissions = (role) => {
-    return getRolePermissions(role);
+exports.hasRoleLevel = hasRoleLevel;
+const getUserPermissions = (role) => {
+    return (0, exports.getRolePermissions)(role);
 };
-export const permissionToString = (permission) => {
+exports.getUserPermissions = getUserPermissions;
+const permissionToString = (permission) => {
     return permission.toLowerCase().replace(/_/g, ':');
 };
-export const permissionsToStrings = (permissions) => {
-    return permissions.map(permissionToString);
+exports.permissionToString = permissionToString;
+const permissionsToStrings = (permissions) => {
+    return permissions.map(exports.permissionToString);
 };
-export const getAllPermissions = () => {
-    return Object.values(Permission);
+exports.permissionsToStrings = permissionsToStrings;
+const getAllPermissions = () => {
+    return Object.values(enums_1.Permission);
 };
+exports.getAllPermissions = getAllPermissions;

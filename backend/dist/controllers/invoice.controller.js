@@ -1,8 +1,44 @@
-import * as invoiceService from '../services/invoice.service';
-import { createInvoiceSchema, invoiceSchema, updateInvoiceSchema, } from '../validators/invoice.schema';
-export const createInvoiceController = async (req, res, next) => {
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getOverdueInvoicesController = exports.getInvoiceStatsController = exports.generateInvoicesReportController = exports.generateInvoicePDFController = exports.markInvoiceAsPaidController = exports.deleteInvoiceController = exports.updateInvoiceController = exports.getInvoiceByIdController = exports.getAllInvoicesController = exports.createInvoiceController = void 0;
+const invoiceService = __importStar(require("../services/invoice.service"));
+const invoice_schema_1 = require("../validators/invoice.schema");
+const createInvoiceController = async (req, res, next) => {
     try {
-        const parsedRequest = createInvoiceSchema.safeParse(req.body);
+        const parsedRequest = invoice_schema_1.createInvoiceSchema.safeParse(req.body);
         if (!parsedRequest.success) {
             return res.status(400).json({
                 message: 'Validation failed',
@@ -19,7 +55,8 @@ export const createInvoiceController = async (req, res, next) => {
         next(error);
     }
 };
-export const getAllInvoicesController = async (req, res, next) => {
+exports.createInvoiceController = createInvoiceController;
+const getAllInvoicesController = async (req, res, next) => {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
@@ -45,9 +82,10 @@ export const getAllInvoicesController = async (req, res, next) => {
         next(error);
     }
 };
-export const getInvoiceByIdController = async (req, res, next) => {
+exports.getAllInvoicesController = getAllInvoicesController;
+const getInvoiceByIdController = async (req, res, next) => {
     try {
-        const parsedId = invoiceSchema.safeParse({
+        const parsedId = invoice_schema_1.invoiceSchema.safeParse({
             invoiceId: req.params.id,
         });
         if (!parsedId.success) {
@@ -69,10 +107,11 @@ export const getInvoiceByIdController = async (req, res, next) => {
         next(error);
     }
 };
-export const updateInvoiceController = async (req, res, next) => {
+exports.getInvoiceByIdController = getInvoiceByIdController;
+const updateInvoiceController = async (req, res, next) => {
     try {
         const id = req.params.id;
-        const parsed = updateInvoiceSchema.safeParse(req.body);
+        const parsed = invoice_schema_1.updateInvoiceSchema.safeParse(req.body);
         if (!parsed.success) {
             return res.status(400).json({
                 message: 'Validation failed',
@@ -89,7 +128,8 @@ export const updateInvoiceController = async (req, res, next) => {
         next(error);
     }
 };
-export const deleteInvoiceController = async (req, res, next) => {
+exports.updateInvoiceController = updateInvoiceController;
+const deleteInvoiceController = async (req, res, next) => {
     try {
         const id = req.params.id;
         await invoiceService.deleteInvoice(id);
@@ -99,7 +139,8 @@ export const deleteInvoiceController = async (req, res, next) => {
         next(error);
     }
 };
-export const markInvoiceAsPaidController = async (req, res, next) => {
+exports.deleteInvoiceController = deleteInvoiceController;
+const markInvoiceAsPaidController = async (req, res, next) => {
     try {
         const invoiceId = req.params.id;
         const invoice = await invoiceService.markInvoiceAsPaid(invoiceId);
@@ -115,7 +156,8 @@ export const markInvoiceAsPaidController = async (req, res, next) => {
         next(error);
     }
 };
-export const generateInvoicePDFController = async (req, res, next) => {
+exports.markInvoiceAsPaidController = markInvoiceAsPaidController;
+const generateInvoicePDFController = async (req, res, next) => {
     try {
         const invoiceId = req.params.id;
         const result = await invoiceService.generateInvoicePDF(invoiceId);
@@ -130,7 +172,8 @@ export const generateInvoicePDFController = async (req, res, next) => {
         next(error);
     }
 };
-export const generateInvoicesReportController = async (req, res, next) => {
+exports.generateInvoicePDFController = generateInvoicePDFController;
+const generateInvoicesReportController = async (req, res, next) => {
     try {
         const format = req.query.format || 'excel';
         const startDate = req.query.startDate;
@@ -160,7 +203,8 @@ export const generateInvoicesReportController = async (req, res, next) => {
         next(error);
     }
 };
-export const getInvoiceStatsController = async (_, res, next) => {
+exports.generateInvoicesReportController = generateInvoicesReportController;
+const getInvoiceStatsController = async (_, res, next) => {
     try {
         const stats = await invoiceService.getInvoiceStats();
         res.status(200).json(stats);
@@ -169,7 +213,8 @@ export const getInvoiceStatsController = async (_, res, next) => {
         next(error);
     }
 };
-export const getOverdueInvoicesController = async (req, res, next) => {
+exports.getInvoiceStatsController = getInvoiceStatsController;
+const getOverdueInvoicesController = async (req, res, next) => {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
@@ -184,3 +229,4 @@ export const getOverdueInvoicesController = async (req, res, next) => {
         next(error);
     }
 };
+exports.getOverdueInvoicesController = getOverdueInvoicesController;

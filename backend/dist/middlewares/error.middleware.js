@@ -1,5 +1,11 @@
-import logger from '../utils/logger';
-export class ValidationError extends Error {
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.notFoundHandler = exports.errorHandler = exports.ConflictError = exports.NotFoundError = exports.AuthorizationError = exports.AuthenticationError = exports.ValidationError = void 0;
+const logger_1 = __importDefault(require("../utils/logger"));
+class ValidationError extends Error {
     statusCode = 400;
     isOperational = true;
     constructor(message) {
@@ -7,7 +13,8 @@ export class ValidationError extends Error {
         this.name = 'ValidationError';
     }
 }
-export class AuthenticationError extends Error {
+exports.ValidationError = ValidationError;
+class AuthenticationError extends Error {
     statusCode = 401;
     isOperational = true;
     constructor(message = 'Authentication required') {
@@ -15,7 +22,8 @@ export class AuthenticationError extends Error {
         this.name = 'AuthenticationError';
     }
 }
-export class AuthorizationError extends Error {
+exports.AuthenticationError = AuthenticationError;
+class AuthorizationError extends Error {
     statusCode = 403;
     isOperational = true;
     constructor(message = 'Access denied') {
@@ -23,7 +31,8 @@ export class AuthorizationError extends Error {
         this.name = 'AuthorizationError';
     }
 }
-export class NotFoundError extends Error {
+exports.AuthorizationError = AuthorizationError;
+class NotFoundError extends Error {
     statusCode = 404;
     isOperational = true;
     constructor(message = 'Resource not found') {
@@ -31,7 +40,8 @@ export class NotFoundError extends Error {
         this.name = 'NotFoundError';
     }
 }
-export class ConflictError extends Error {
+exports.NotFoundError = NotFoundError;
+class ConflictError extends Error {
     statusCode = 409;
     isOperational = true;
     constructor(message) {
@@ -39,7 +49,8 @@ export class ConflictError extends Error {
         this.name = 'ConflictError';
     }
 }
-export const errorHandler = (err, req, res, _next) => {
+exports.ConflictError = ConflictError;
+const errorHandler = (err, req, res, _next) => {
     let { statusCode = 500, message = 'Internal Server Error' } = err;
     const errorDetails = {
         message: err.message,
@@ -52,10 +63,10 @@ export const errorHandler = (err, req, res, _next) => {
         userId: req.user?.id,
     };
     if (statusCode >= 500) {
-        logger.error('Server Error:', errorDetails);
+        logger_1.default.error('Server Error:', errorDetails);
     }
     else {
-        logger.warn('Client Error:', errorDetails);
+        logger_1.default.warn('Client Error:', errorDetails);
     }
     if (err.name === 'ValidationError' || err.name === 'ZodError') {
         statusCode = 400;
@@ -90,11 +101,13 @@ export const errorHandler = (err, req, res, _next) => {
     }
     res.status(statusCode).json(response);
 };
-export const notFoundHandler = (req, res) => {
-    logger.warn(`404 - Route not found: ${req.method} ${req.url}`);
+exports.errorHandler = errorHandler;
+const notFoundHandler = (req, res) => {
+    logger_1.default.warn(`404 - Route not found: ${req.method} ${req.url}`);
     res.status(404).json({
         success: false,
         message: 'Route not found',
         statusCode: 404,
     });
 };
+exports.notFoundHandler = notFoundHandler;

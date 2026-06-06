@@ -1,20 +1,23 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getCustomerUpcomingBookings = exports.getCustomerRecentBookings = exports.getCustomerDashboardStats = void 0;
 /* eslint-disable no-console */
-import { Booking } from '../models/booking.model';
-import { Payment } from '../models/payment.model';
-import { BookingStatus, PaymentStatus } from '../types/enums';
-export const getCustomerDashboardStats = async (userId) => {
+const booking_model_1 = require("../models/booking.model");
+const payment_model_1 = require("../models/payment.model");
+const enums_1 = require("../types/enums");
+const getCustomerDashboardStats = async (userId) => {
     try {
-        const bookingIds = await Booking.find({ userId }).distinct('_id');
+        const bookingIds = await booking_model_1.Booking.find({ userId }).distinct('_id');
         const [totalBookings, totalSpentResult, pendingPayments, activeBookings] = await Promise.all([
-            Booking.countDocuments({ userId }),
-            Payment.aggregate([
-                { $match: { bookingId: { $in: bookingIds }, status: PaymentStatus.PAID } },
+            booking_model_1.Booking.countDocuments({ userId }),
+            payment_model_1.Payment.aggregate([
+                { $match: { bookingId: { $in: bookingIds }, status: enums_1.PaymentStatus.PAID } },
                 { $group: { _id: null, total: { $sum: '$amount' } } },
             ]),
-            Payment.countDocuments({ bookingId: { $in: bookingIds }, status: PaymentStatus.PENDING }),
-            Booking.countDocuments({
+            payment_model_1.Payment.countDocuments({ bookingId: { $in: bookingIds }, status: enums_1.PaymentStatus.PENDING }),
+            booking_model_1.Booking.countDocuments({
                 userId,
-                status: { $in: [BookingStatus.PENDING, BookingStatus.IN_PROGRESS] },
+                status: { $in: [enums_1.BookingStatus.PENDING, enums_1.BookingStatus.IN_PROGRESS] },
             }),
         ]);
         return {
@@ -29,9 +32,10 @@ export const getCustomerDashboardStats = async (userId) => {
         throw new Error('Failed to fetch customer dashboard statistics');
     }
 };
-export const getCustomerRecentBookings = async (userId, limit = 5) => {
+exports.getCustomerDashboardStats = getCustomerDashboardStats;
+const getCustomerRecentBookings = async (userId, limit = 5) => {
     try {
-        return Booking.find({ userId })
+        return booking_model_1.Booking.find({ userId })
             .sort({ createdAt: -1 })
             .limit(limit)
             .populate({ path: 'userId', select: 'name phone address' })
@@ -43,12 +47,13 @@ export const getCustomerRecentBookings = async (userId, limit = 5) => {
         throw new Error('Failed to fetch recent bookings');
     }
 };
-export const getCustomerUpcomingBookings = async (userId, limit = 5) => {
+exports.getCustomerRecentBookings = getCustomerRecentBookings;
+const getCustomerUpcomingBookings = async (userId, limit = 5) => {
     try {
-        return Booking.find({
+        return booking_model_1.Booking.find({
             userId,
             date: { $gte: new Date() },
-            status: { $in: [BookingStatus.PENDING, BookingStatus.IN_PROGRESS] },
+            status: { $in: [enums_1.BookingStatus.PENDING, enums_1.BookingStatus.IN_PROGRESS] },
         })
             .sort({ date: 1 })
             .limit(limit)
@@ -59,3 +64,4 @@ export const getCustomerUpcomingBookings = async (userId, limit = 5) => {
         throw new Error('Failed to fetch upcoming bookings');
     }
 };
+exports.getCustomerUpcomingBookings = getCustomerUpcomingBookings;

@@ -1,21 +1,26 @@
-import express from 'express';
-import { selfDeleteUserController, softDeleteUserController, } from '../controllers/auth.controller';
-import { getCustomersController, getStaffsController, updateUserRoleController, getCurrentUserController, updateProfileDetailsController, updateProfilePictureController, } from '../controllers/user.controller';
-import { authMiddleware } from '../middlewares/auth.middleware';
-import { upload } from '../middlewares/multer.middleware';
-import { requirePermission, requireAnyPermission, } from '../middlewares/permission.middleware';
-import { handleUploadError } from '../middlewares/upload-error.middleware';
-import { Permission } from '../types/enums';
-const router = express.Router();
-router.use(authMiddleware);
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = __importDefault(require("express"));
+const auth_controller_1 = require("../controllers/auth.controller");
+const user_controller_1 = require("../controllers/user.controller");
+const auth_middleware_1 = require("../middlewares/auth.middleware");
+const multer_middleware_1 = require("../middlewares/multer.middleware");
+const permission_middleware_1 = require("../middlewares/permission.middleware");
+const upload_error_middleware_1 = require("../middlewares/upload-error.middleware");
+const enums_1 = require("../types/enums");
+const router = express_1.default.Router();
+router.use(auth_middleware_1.authMiddleware);
 // Profile routes - any authenticated user
-router.get('/me', getCurrentUserController);
-router.patch('/profile-details', requirePermission(Permission.PROFILE_UPDATE_OWN), updateProfileDetailsController);
-router.patch('/profile-picture', requirePermission(Permission.PROFILE_UPDATE_OWN), upload.single('image'), handleUploadError, updateProfilePictureController);
-router.delete('/me', requirePermission(Permission.USER_DELETE), selfDeleteUserController);
+router.get('/me', user_controller_1.getCurrentUserController);
+router.patch('/profile-details', (0, permission_middleware_1.requirePermission)(enums_1.Permission.PROFILE_UPDATE_OWN), user_controller_1.updateProfileDetailsController);
+router.patch('/profile-picture', (0, permission_middleware_1.requirePermission)(enums_1.Permission.PROFILE_UPDATE_OWN), multer_middleware_1.upload.single('image'), upload_error_middleware_1.handleUploadError, user_controller_1.updateProfilePictureController);
+router.delete('/me', (0, permission_middleware_1.requirePermission)(enums_1.Permission.USER_DELETE), auth_controller_1.selfDeleteUserController);
 // Admin routes - require specific permissions
-router.get('/admin/customers', requirePermission(Permission.USER_VIEW), getCustomersController);
-router.get('/admin/staffs', requireAnyPermission([Permission.STAFF_VIEW, Permission.USER_VIEW]), getStaffsController);
-router.delete('/admin/delete/user/:id', requirePermission(Permission.USER_DELETE), softDeleteUserController);
-router.patch('/admin/user/:id/role', requirePermission(Permission.PERMISSION_ASSIGN), updateUserRoleController);
-export default router;
+router.get('/admin/customers', (0, permission_middleware_1.requirePermission)(enums_1.Permission.USER_VIEW), user_controller_1.getCustomersController);
+router.get('/admin/staffs', (0, permission_middleware_1.requireAnyPermission)([enums_1.Permission.STAFF_VIEW, enums_1.Permission.USER_VIEW]), user_controller_1.getStaffsController);
+router.delete('/admin/delete/user/:id', (0, permission_middleware_1.requirePermission)(enums_1.Permission.USER_DELETE), auth_controller_1.softDeleteUserController);
+router.patch('/admin/user/:id/role', (0, permission_middleware_1.requirePermission)(enums_1.Permission.PERMISSION_ASSIGN), user_controller_1.updateUserRoleController);
+exports.default = router;

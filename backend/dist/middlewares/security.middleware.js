@@ -1,4 +1,7 @@
-export const xssProtection = (req, _res, next) => {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.xssProtection = void 0;
+const xssProtection = (req, _res, next) => {
     if (req.body) {
         req.body = sanitizeObject(req.body);
     }
@@ -16,6 +19,7 @@ export const xssProtection = (req, _res, next) => {
     }
     next();
 };
+exports.xssProtection = xssProtection;
 function sanitizeObject(obj) {
     if (typeof obj === 'string') {
         return obj

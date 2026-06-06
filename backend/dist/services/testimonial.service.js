@@ -1,5 +1,8 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getTestimonialStatsService = exports.approveTestimonialService = exports.deleteTestimonialService = exports.updateTestimonialService = exports.getUserTestimonialsService = exports.getTestimonialByIdService = exports.getAllAdminTestimonialsService = exports.getAllTestimonialsService = exports.createTestimonialService = void 0;
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Testimonial } from '../models/testimonial.model';
+const testimonial_model_1 = require("../models/testimonial.model");
 const withUser = async (query) => {
     const result = await query
         .populate({ path: 'userId', select: '_id name profileUrl' })
@@ -12,33 +15,35 @@ const withUser = async (query) => {
     };
     return Array.isArray(result) ? result.map(transform) : transform(result);
 };
-export const createTestimonialService = async (data) => {
+const createTestimonialService = async (data) => {
     if (data.rating < 1 || data.rating > 5) {
         throw new Error('Rating must be between 1 and 5');
     }
-    const existing = await Testimonial.findOne({ userId: data.userId, isActive: true });
+    const existing = await testimonial_model_1.Testimonial.findOne({ userId: data.userId, isActive: true });
     if (existing) {
-        return withUser(Testimonial.findByIdAndUpdate(existing._id, { ...data, isApproved: false }, { new: true }));
+        return withUser(testimonial_model_1.Testimonial.findByIdAndUpdate(existing._id, { ...data, isApproved: false }, { new: true }));
     }
-    const created = await Testimonial.create(data);
-    return withUser(Testimonial.findById(created._id));
+    const created = await testimonial_model_1.Testimonial.create(data);
+    return withUser(testimonial_model_1.Testimonial.findById(created._id));
 };
-export const getAllTestimonialsService = async (options) => {
+exports.createTestimonialService = createTestimonialService;
+const getAllTestimonialsService = async (options) => {
     const { page = 1, limit = 10, rating, isApproved = true, isActive = true } = options ?? {};
     const skip = (page - 1) * limit;
     const query = { isActive, isApproved };
     if (rating !== undefined)
         query.rating = rating;
     const [testimonials, total] = await Promise.all([
-        withUser(Testimonial.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit)),
-        Testimonial.countDocuments(query),
+        withUser(testimonial_model_1.Testimonial.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit)),
+        testimonial_model_1.Testimonial.countDocuments(query),
     ]);
     return {
         testimonials,
         pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     };
 };
-export const getAllAdminTestimonialsService = async (options) => {
+exports.getAllTestimonialsService = getAllTestimonialsService;
+const getAllAdminTestimonialsService = async (options) => {
     const { page = 1, limit = 10, rating, isApproved, isActive } = options ?? {};
     const skip = (page - 1) * limit;
     const query = {};
@@ -49,63 +54,69 @@ export const getAllAdminTestimonialsService = async (options) => {
     if (rating !== undefined)
         query.rating = rating;
     const [testimonials, total] = await Promise.all([
-        withUser(Testimonial.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit)),
-        Testimonial.countDocuments(query),
+        withUser(testimonial_model_1.Testimonial.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit)),
+        testimonial_model_1.Testimonial.countDocuments(query),
     ]);
     return {
         testimonials,
         pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     };
 };
-export const getTestimonialByIdService = async (id) => {
-    return withUser(Testimonial.findById(id));
+exports.getAllAdminTestimonialsService = getAllAdminTestimonialsService;
+const getTestimonialByIdService = async (id) => {
+    return withUser(testimonial_model_1.Testimonial.findById(id));
 };
-export const getUserTestimonialsService = async (userId, options) => {
+exports.getTestimonialByIdService = getTestimonialByIdService;
+const getUserTestimonialsService = async (userId, options) => {
     const { page = 1, limit = 10 } = options ?? {};
     const skip = (page - 1) * limit;
     const query = { userId, isActive: true };
     const [testimonials, total] = await Promise.all([
-        withUser(Testimonial.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit)),
-        Testimonial.countDocuments(query),
+        withUser(testimonial_model_1.Testimonial.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit)),
+        testimonial_model_1.Testimonial.countDocuments(query),
     ]);
     return {
         testimonials,
         pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     };
 };
-export const updateTestimonialService = async (id, userId, data) => {
+exports.getUserTestimonialsService = getUserTestimonialsService;
+const updateTestimonialService = async (id, userId, data) => {
     if (data.rating && (data.rating < 1 || data.rating > 5)) {
         throw new Error('Rating must be between 1 and 5');
     }
-    const testimonial = await Testimonial.findOne({ _id: id, userId, isActive: true });
+    const testimonial = await testimonial_model_1.Testimonial.findOne({ _id: id, userId, isActive: true });
     if (!testimonial)
         throw new Error('Testimonial not found or access denied');
-    return withUser(Testimonial.findByIdAndUpdate(id, { ...data, ...(testimonial.isApproved ? {} : { isApproved: false }) }, { new: true }));
+    return withUser(testimonial_model_1.Testimonial.findByIdAndUpdate(id, { ...data, ...(testimonial.isApproved ? {} : { isApproved: false }) }, { new: true }));
 };
-export const deleteTestimonialService = async (id, userId) => {
-    const testimonial = await Testimonial.findOne({ _id: id, userId, isActive: true });
+exports.updateTestimonialService = updateTestimonialService;
+const deleteTestimonialService = async (id, userId) => {
+    const testimonial = await testimonial_model_1.Testimonial.findOne({ _id: id, userId, isActive: true });
     if (!testimonial)
         throw new Error('Testimonial not found or access denied');
-    return Testimonial.findByIdAndUpdate(id, { isActive: false }, { new: true });
+    return testimonial_model_1.Testimonial.findByIdAndUpdate(id, { isActive: false }, { new: true });
 };
-export const approveTestimonialService = async (id) => {
-    const testimonial = await Testimonial.findById(id);
+exports.deleteTestimonialService = deleteTestimonialService;
+const approveTestimonialService = async (id) => {
+    const testimonial = await testimonial_model_1.Testimonial.findById(id);
     if (!testimonial)
         throw new Error('Testimonial not found');
     if (!testimonial.isActive)
         throw new Error('Cannot approve inactive testimonial');
-    return withUser(Testimonial.findByIdAndUpdate(id, { isApproved: true }, { new: true }));
+    return withUser(testimonial_model_1.Testimonial.findByIdAndUpdate(id, { isApproved: true }, { new: true }));
 };
-export const getTestimonialStatsService = async () => {
+exports.approveTestimonialService = approveTestimonialService;
+const getTestimonialStatsService = async () => {
     const [totalCount, approvedCount, pendingCount, avgResult, ratingDistribution] = await Promise.all([
-        Testimonial.countDocuments({ isActive: true }),
-        Testimonial.countDocuments({ isActive: true, isApproved: true }),
-        Testimonial.countDocuments({ isActive: true, isApproved: false }),
-        Testimonial.aggregate([
+        testimonial_model_1.Testimonial.countDocuments({ isActive: true }),
+        testimonial_model_1.Testimonial.countDocuments({ isActive: true, isApproved: true }),
+        testimonial_model_1.Testimonial.countDocuments({ isActive: true, isApproved: false }),
+        testimonial_model_1.Testimonial.aggregate([
             { $match: { isActive: true, isApproved: true } },
             { $group: { _id: null, avg: { $avg: '$rating' } } },
         ]),
-        Testimonial.aggregate([
+        testimonial_model_1.Testimonial.aggregate([
             { $match: { isActive: true, isApproved: true } },
             { $group: { _id: '$rating', count: { $sum: 1 } } },
             { $sort: { _id: 1 } },
@@ -122,3 +133,4 @@ export const getTestimonialStatsService = async () => {
         })),
     };
 };
+exports.getTestimonialStatsService = getTestimonialStatsService;

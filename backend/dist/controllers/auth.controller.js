@@ -1,12 +1,51 @@
-import * as authService from '../services/auth.service';
-import { sendWelcomeEmail } from '../services/email.service';
-import { comparePassword } from '../utils/hash';
-import { generateRefreshToken, generateToken, verifyRefreshToken, } from '../utils/jwt';
-import logger from '../utils/logger';
-import { ChangePasswordSchema, LoginUserSchema, PasswordResetSchema, RefreshTokenSchema, RegisterUserSchema, RequestPasswordResetSchema, RequestVerificationSchema, ResetTokenSchema, SoftDeleteUserSchema, VerifyEmailSchema, } from '../validators/auth.schema';
-export const registerController = async (req, res, next) => {
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.restoreUserController = exports.selfDeleteUserController = exports.softDeleteUserController = exports.logoutController = exports.changePasswordController = exports.passwordResetController = exports.validateResetTokenController = exports.requestPasswordResetController = exports.requestVerificationCodeController = exports.refreshTokenController = exports.verifyEmailController = exports.loginUserController = exports.loginAdminController = exports.loginController = exports.registerStaffController = exports.registerAdminController = exports.registerController = void 0;
+const authService = __importStar(require("../services/auth.service"));
+const email_service_1 = require("../services/email.service");
+const hash_1 = require("../utils/hash");
+const jwt_1 = require("../utils/jwt");
+const logger_1 = __importDefault(require("../utils/logger"));
+const auth_schema_1 = require("../validators/auth.schema");
+const registerController = async (req, res, next) => {
     try {
-        const { name, email, password } = RegisterUserSchema.parse(req.body);
+        const { name, email, password } = auth_schema_1.RegisterUserSchema.parse(req.body);
         const userExist = await authService.userExists(email);
         if (userExist) {
             res.status(400).json({
@@ -22,9 +61,10 @@ export const registerController = async (req, res, next) => {
         next(error);
     }
 };
-export const registerAdminController = async (req, res, next) => {
+exports.registerController = registerController;
+const registerAdminController = async (req, res, next) => {
     try {
-        const { name, email, password } = RegisterUserSchema.parse(req.body);
+        const { name, email, password } = auth_schema_1.RegisterUserSchema.parse(req.body);
         const userExist = await authService.userExists(email);
         if (userExist) {
             res.status(400).json({
@@ -40,9 +80,10 @@ export const registerAdminController = async (req, res, next) => {
         next(error);
     }
 };
-export const registerStaffController = async (req, res, next) => {
+exports.registerAdminController = registerAdminController;
+const registerStaffController = async (req, res, next) => {
     try {
-        const { name, email, password } = RegisterUserSchema.parse(req.body);
+        const { name, email, password } = auth_schema_1.RegisterUserSchema.parse(req.body);
         const userExist = await authService.userExists(email);
         if (userExist) {
             res.status(400).json({
@@ -58,9 +99,10 @@ export const registerStaffController = async (req, res, next) => {
         next(error);
     }
 };
-export const loginController = async (req, res, next) => {
+exports.registerStaffController = registerStaffController;
+const loginController = async (req, res, next) => {
     try {
-        const { email, password } = LoginUserSchema.parse(req.body);
+        const { email, password } = auth_schema_1.LoginUserSchema.parse(req.body);
         const userExist = await authService.findOneByEmail(email);
         if (!userExist) {
             res.status(404).json({
@@ -76,7 +118,7 @@ export const loginController = async (req, res, next) => {
             });
             return;
         }
-        if (!(await comparePassword(password, userExist.password))) {
+        if (!(await (0, hash_1.comparePassword)(password, userExist.password))) {
             res.status(401).json({
                 success: false,
                 message: 'Invalid credentials, your email or password is not correct.',
@@ -90,23 +132,26 @@ export const loginController = async (req, res, next) => {
         next(error);
     }
 };
+exports.loginController = loginController;
 // Keep legacy endpoints for backward compatibility
-export const loginAdminController = async (req, res, next) => {
-    await loginController(req, res, next);
+const loginAdminController = async (req, res, next) => {
+    await (0, exports.loginController)(req, res, next);
 };
-export const loginUserController = async (req, res, next) => {
-    await loginController(req, res, next);
+exports.loginAdminController = loginAdminController;
+const loginUserController = async (req, res, next) => {
+    await (0, exports.loginController)(req, res, next);
 };
-export const verifyEmailController = async (req, res, next) => {
+exports.loginUserController = loginUserController;
+const verifyEmailController = async (req, res, next) => {
     try {
-        const { email, code } = VerifyEmailSchema.parse(req.body);
+        const { email, code } = auth_schema_1.VerifyEmailSchema.parse(req.body);
         const userExist = await authService.findOneByEmail(email);
         if (!userExist) {
             res.status(404).json({ message: 'User not found' });
             return;
         }
         await authService.verifyUserEmail(userExist.id, code);
-        await sendWelcomeEmail(email, userExist.name);
+        await (0, email_service_1.sendWelcomeEmail)(email, userExist.name);
         res
             .status(200)
             .json({ isVerified: true, message: 'Email verified successfully.' });
@@ -115,20 +160,21 @@ export const verifyEmailController = async (req, res, next) => {
         next(error);
     }
 };
-export const refreshTokenController = async (req, res, next) => {
+exports.verifyEmailController = verifyEmailController;
+const refreshTokenController = async (req, res, next) => {
     try {
-        const { refreshToken } = RefreshTokenSchema.parse(req.body);
+        const { refreshToken } = auth_schema_1.RefreshTokenSchema.parse(req.body);
         if (!refreshToken) {
             return res.status(400).json({ message: 'Refresh token required' });
         }
-        const payload = verifyRefreshToken(refreshToken);
-        const newAccessToken = generateToken({
+        const payload = (0, jwt_1.verifyRefreshToken)(refreshToken);
+        const newAccessToken = (0, jwt_1.generateToken)({
             id: payload.id,
             name: payload.name,
             email: payload.email,
             role: payload.role,
         });
-        const newRefreshToken = generateRefreshToken({
+        const newRefreshToken = (0, jwt_1.generateRefreshToken)({
             id: payload.id,
             name: payload.name,
             email: payload.email,
@@ -144,9 +190,10 @@ export const refreshTokenController = async (req, res, next) => {
         next(error);
     }
 };
-export const requestVerificationCodeController = async (req, res, next) => {
+exports.refreshTokenController = refreshTokenController;
+const requestVerificationCodeController = async (req, res, next) => {
     try {
-        const { email } = RequestVerificationSchema.parse(req.body);
+        const { email } = auth_schema_1.RequestVerificationSchema.parse(req.body);
         const userExist = await authService.findOneByEmail(email);
         if (!userExist) {
             res.status(400).json({ message: 'User does not exist, try again.' });
@@ -164,9 +211,10 @@ export const requestVerificationCodeController = async (req, res, next) => {
         next(error);
     }
 };
-export const requestPasswordResetController = async (req, res, next) => {
+exports.requestVerificationCodeController = requestVerificationCodeController;
+const requestPasswordResetController = async (req, res, next) => {
     try {
-        const { email } = RequestPasswordResetSchema.parse(req.body);
+        const { email } = auth_schema_1.RequestPasswordResetSchema.parse(req.body);
         const userExist = await authService.findOneByEmail(email);
         if (!userExist) {
             res.status(400).json({ message: 'User does not exist, try again.' });
@@ -181,9 +229,10 @@ export const requestPasswordResetController = async (req, res, next) => {
         next(error);
     }
 };
-export const validateResetTokenController = async (req, res, next) => {
+exports.requestPasswordResetController = requestPasswordResetController;
+const validateResetTokenController = async (req, res, next) => {
     try {
-        const { resetToken } = ResetTokenSchema.parse(req.body);
+        const { resetToken } = auth_schema_1.ResetTokenSchema.parse(req.body);
         const result = await authService.validateResetToken(resetToken);
         if (!result) {
             res.status(400).json({ message: ' Invalid token, try again.' });
@@ -197,9 +246,10 @@ export const validateResetTokenController = async (req, res, next) => {
         next(error);
     }
 };
-export const passwordResetController = async (req, res, next) => {
+exports.validateResetTokenController = validateResetTokenController;
+const passwordResetController = async (req, res, next) => {
     try {
-        const { email, newPassword } = PasswordResetSchema.parse(req.body);
+        const { email, newPassword } = auth_schema_1.PasswordResetSchema.parse(req.body);
         const userExist = await authService.findOneByEmail(email);
         if (!userExist) {
             res.status(400).json({ message: 'User does not exist, try again.' });
@@ -214,9 +264,10 @@ export const passwordResetController = async (req, res, next) => {
         next(error);
     }
 };
-export const changePasswordController = async (req, res, next) => {
+exports.passwordResetController = passwordResetController;
+const changePasswordController = async (req, res, next) => {
     try {
-        const { oldPassword, newPassword } = ChangePasswordSchema.parse(req.body);
+        const { oldPassword, newPassword } = auth_schema_1.ChangePasswordSchema.parse(req.body);
         const userId = req.user?.id;
         if (!userId) {
             res
@@ -229,14 +280,14 @@ export const changePasswordController = async (req, res, next) => {
             res.status(404).json({ message: 'User not found.' });
             return;
         }
-        const isOldPasswordValid = await comparePassword(oldPassword, userExist.password);
+        const isOldPasswordValid = await (0, hash_1.comparePassword)(oldPassword, userExist.password);
         if (!isOldPasswordValid) {
             res.status(400).json({
                 message: 'Current password is incorrect.',
             });
             return;
         }
-        const isSamePassword = await comparePassword(newPassword, userExist.password);
+        const isSamePassword = await (0, hash_1.comparePassword)(newPassword, userExist.password);
         if (isSamePassword) {
             res.status(400).json({
                 message: 'New password must be different from current password.',
@@ -257,7 +308,8 @@ export const changePasswordController = async (req, res, next) => {
         next(error);
     }
 };
-export const logoutController = async (req, res, next) => {
+exports.changePasswordController = changePasswordController;
+const logoutController = async (req, res, next) => {
     try {
         const userId = req.user?.id;
         if (!userId) {
@@ -271,10 +323,11 @@ export const logoutController = async (req, res, next) => {
         next(error);
     }
 };
-export const softDeleteUserController = async (req, res, next) => {
+exports.logoutController = logoutController;
+const softDeleteUserController = async (req, res, next) => {
     try {
         const userId = req.params.id;
-        const { deletionReason, currentPassword } = SoftDeleteUserSchema.parse(req.body);
+        const { deletionReason, currentPassword } = auth_schema_1.SoftDeleteUserSchema.parse(req.body);
         if (!currentPassword) {
             res.status(400).json({
                 message: 'Password is required to delete account',
@@ -292,7 +345,7 @@ export const softDeleteUserController = async (req, res, next) => {
             res.status(404).json({ message: 'User not found' });
             return;
         }
-        const isPasswordValid = await comparePassword(currentPassword, currentUser.password);
+        const isPasswordValid = await (0, hash_1.comparePassword)(currentPassword, currentUser.password);
         if (!isPasswordValid) {
             res.status(400).json({
                 message: 'Invalid password. Please enter your current password to confirm account deletion.',
@@ -315,18 +368,19 @@ export const softDeleteUserController = async (req, res, next) => {
         });
     }
     catch (error) {
-        logger.error('Error in softDeleteUserController:', error);
+        logger_1.default.error('Error in softDeleteUserController:', error);
         next(error);
     }
 };
-export const selfDeleteUserController = async (req, res, next) => {
+exports.softDeleteUserController = softDeleteUserController;
+const selfDeleteUserController = async (req, res, next) => {
     try {
         const userId = req.user?.id;
         if (!userId) {
             res.status(401).json({ message: 'Unauthorized' });
             return;
         }
-        const { deletionReason, currentPassword } = SoftDeleteUserSchema.parse(req.body);
+        const { deletionReason, currentPassword } = auth_schema_1.SoftDeleteUserSchema.parse(req.body);
         if (!currentPassword) {
             res.status(400).json({
                 message: 'Password is required to delete account',
@@ -338,7 +392,7 @@ export const selfDeleteUserController = async (req, res, next) => {
             res.status(404).json({ message: 'User not found' });
             return;
         }
-        const isPasswordValid = await comparePassword(currentPassword, currentUser.password);
+        const isPasswordValid = await (0, hash_1.comparePassword)(currentPassword, currentUser.password);
         if (!isPasswordValid) {
             res.status(400).json({
                 message: 'Invalid password. Please enter your current password to confirm account deletion.',
@@ -361,11 +415,12 @@ export const selfDeleteUserController = async (req, res, next) => {
         });
     }
     catch (error) {
-        logger.error('Error in selfDeleteUserController:', error);
+        logger_1.default.error('Error in selfDeleteUserController:', error);
         next(error);
     }
 };
-export const restoreUserController = async (req, res, next) => {
+exports.selfDeleteUserController = selfDeleteUserController;
+const restoreUserController = async (req, res, next) => {
     try {
         const userId = req.params.id;
         if (req.user?.id !== userId) {
@@ -380,7 +435,8 @@ export const restoreUserController = async (req, res, next) => {
         });
     }
     catch (error) {
-        logger.error('Error in restoreUserController:', error);
+        logger_1.default.error('Error in restoreUserController:', error);
         next(error);
     }
 };
+exports.restoreUserController = restoreUserController;

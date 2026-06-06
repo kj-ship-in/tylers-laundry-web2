@@ -1,34 +1,40 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ReportingService = void 0;
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import ExcelJS from 'exceljs';
-import { Booking } from '../models/booking.model';
-import { Invoice } from '../models/invoice.model';
-import { Payment } from '../models/payment.model';
-import { Role } from '../models/role.model';
-import { Service } from '../models/service.model';
-import { User } from '../models/user.model';
-import { BookingStatus, InvoiceStatus, PaymentStatus } from '../types/enums';
-import ExcelReportGenerator from '../utils/excel-generator';
+const exceljs_1 = __importDefault(require("exceljs"));
+const booking_model_1 = require("../models/booking.model");
+const invoice_model_1 = require("../models/invoice.model");
+const payment_model_1 = require("../models/payment.model");
+const role_model_1 = require("../models/role.model");
+const service_model_1 = require("../models/service.model");
+const user_model_1 = require("../models/user.model");
+const enums_1 = require("../types/enums");
+const excel_generator_1 = __importDefault(require("../utils/excel-generator"));
 const ReportingService = {
     async generateFinancialReport(filters) {
         const { startDate, endDate } = filters;
         const start = new Date(startDate);
         const end = new Date(endDate);
         const [payments, invoices, revenueByService] = await Promise.all([
-            Payment.find({ createdAt: { $gte: start, $lte: end }, status: PaymentStatus.PAID }).populate({
+            payment_model_1.Payment.find({ createdAt: { $gte: start, $lte: end }, status: enums_1.PaymentStatus.PAID }).populate({
                 path: 'bookingId',
                 populate: [{ path: 'userId' }, { path: 'serviceId' }],
             }),
-            Invoice.find({ issuedAt: { $gte: start, $lte: end } }).populate({
+            invoice_model_1.Invoice.find({ issuedAt: { $gte: start, $lte: end } }).populate({
                 path: 'paymentId',
                 populate: { path: 'bookingId', populate: [{ path: 'userId' }, { path: 'serviceId' }] },
             }),
-            Booking.aggregate([
-                { $match: { createdAt: { $gte: start, $lte: end }, status: BookingStatus.COMPLETED } },
+            booking_model_1.Booking.aggregate([
+                { $match: { createdAt: { $gte: start, $lte: end }, status: enums_1.BookingStatus.COMPLETED } },
                 { $group: { _id: '$serviceId', totalAmount: { $sum: '$totalAmount' }, count: { $sum: 1 } } },
                 { $sort: { totalAmount: -1 } },
             ]),
         ]);
-        const services = await Service.find();
+        const services = await service_model_1.Service.find();
         const revenueByServiceWithDetails = revenueByService.map((revenue) => {
             const service = services.find(s => s._id.toString() === revenue._id.toString());
             return {
@@ -51,9 +57,9 @@ const ReportingService = {
         };
         const reportData = { summary, payments, revenueByService: revenueByServiceWithDetails };
         if (filters.format === 'excel') {
-            const excelBuffer = await ExcelReportGenerator.generateFinancialReport(reportData);
+            const excelBuffer = await excel_generator_1.default.generateFinancialReport(reportData);
             const filename = `financial-report-${Date.now()}.xlsx`;
-            const filepath = await ExcelReportGenerator.saveExcelToFile(excelBuffer, filename);
+            const filepath = await excel_generator_1.default.saveExcelToFile(excelBuffer, filename);
             return { buffer: excelBuffer, filepath, filename, format: 'excel' };
         }
         return { data: reportData, format: 'json' };
@@ -65,11 +71,11 @@ const ReportingService = {
         if (filters.startDate && filters.endDate) {
             where.createdAt = { $gte: new Date(filters.startDate), $lte: new Date(filters.endDate) };
         }
-        const customers = await User.find(where).sort({ createdAt: -1 });
+        const customers = await user_model_1.User.find(where).sort({ createdAt: -1 });
         const customersWithStats = await Promise.all(customers.map(async (customer) => {
-            const bookings = await Booking.find({ userId: customer._id });
+            const bookings = await booking_model_1.Booking.find({ userId: customer._id });
             const bookingIds = bookings.map(b => b._id);
-            const payments = await Payment.find({ bookingId: { $in: bookingIds } });
+            const payments = await payment_model_1.Payment.find({ bookingId: { $in: bookingIds } });
             const totalSpent = payments.reduce((sum, p) => sum + Number(p.amount), 0);
             return {
                 ...customer.toObject(),
@@ -81,23 +87,23 @@ const ReportingService = {
             };
         }));
         if (filters.format === 'excel') {
-            const excelBuffer = await ExcelReportGenerator.generateCustomerReport(customersWithStats, filters);
+            const excelBuffer = await excel_generator_1.default.generateCustomerReport(customersWithStats, filters);
             const filename = `customer-report-${Date.now()}.xlsx`;
-            const filepath = await ExcelReportGenerator.saveExcelToFile(excelBuffer, filename);
+            const filepath = await excel_generator_1.default.saveExcelToFile(excelBuffer, filename);
             return { buffer: excelBuffer, filepath, filename, format: 'excel' };
         }
         return { data: customersWithStats, format: 'json' };
     },
     async generateServicePerformanceReport(filters) {
         const { startDate, endDate } = filters;
-        const serviceStats = await Service.find();
+        const serviceStats = await service_model_1.Service.find();
         const reportData = await Promise.all(serviceStats.map(async (service) => {
-            const bookings = await Booking.find({
+            const bookings = await booking_model_1.Booking.find({
                 serviceId: service._id,
                 createdAt: { $gte: new Date(startDate), $lte: new Date(endDate) },
             });
             const bookingIds = bookings.map(b => b._id);
-            const payments = await Payment.find({ bookingId: { $in: bookingIds } });
+            const payments = await payment_model_1.Payment.find({ bookingId: { $in: bookingIds } });
             const totalRevenue = payments.reduce((sum, p) => sum + Number(p.amount), 0);
             const completedCount = bookings.filter(b => b.status === 'COMPLETED').length;
             return {
@@ -113,7 +119,7 @@ const ReportingService = {
             };
         }));
         if (filters.format === 'excel') {
-            const workbook = new ExcelJS.Workbook();
+            const workbook = new exceljs_1.default.Workbook();
             const worksheet = workbook.addWorksheet('Service Performance');
             worksheet.columns = [
                 { header: 'Service Name', key: 'serviceName', width: 25 },
@@ -129,7 +135,7 @@ const ReportingService = {
             reportData.forEach(s => worksheet.addRow(s));
             const excelBuffer = await workbook.xlsx.writeBuffer();
             const filename = `service-performance-${Date.now()}.xlsx`;
-            const filepath = await ExcelReportGenerator.saveExcelToFile(excelBuffer, filename);
+            const filepath = await excel_generator_1.default.saveExcelToFile(excelBuffer, filename);
             return { buffer: excelBuffer, filepath, filename, format: 'excel' };
         }
         return { data: reportData, format: 'json' };
@@ -138,24 +144,24 @@ const ReportingService = {
         const today = new Date();
         const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
         const startOfYear = new Date(today.getFullYear(), 0, 1);
-        const userRole = await Role.findOne({ name: 'USER' });
+        const userRole = await role_model_1.Role.findOne({ name: 'USER' });
         const [totalCustomers, totalBookings, activeBookings, pendingPayments, monthlyRevenue, yearlyRevenue, pendingBookings, completedBookings, unpaidInvoices, recentPayments,] = await Promise.all([
-            userRole ? User.countDocuments({ roleId: userRole._id, isActive: true }) : 0,
-            Booking.countDocuments({ status: { $in: [BookingStatus.PENDING, BookingStatus.IN_PROGRESS] } }),
-            Payment.countDocuments({ status: PaymentStatus.PENDING }),
-            Booking.countDocuments(),
-            Payment.aggregate([
-                { $match: { status: PaymentStatus.PAID, createdAt: { $gte: startOfMonth } } },
+            userRole ? user_model_1.User.countDocuments({ roleId: userRole._id, isActive: true }) : 0,
+            booking_model_1.Booking.countDocuments({ status: { $in: [enums_1.BookingStatus.PENDING, enums_1.BookingStatus.IN_PROGRESS] } }),
+            payment_model_1.Payment.countDocuments({ status: enums_1.PaymentStatus.PENDING }),
+            booking_model_1.Booking.countDocuments(),
+            payment_model_1.Payment.aggregate([
+                { $match: { status: enums_1.PaymentStatus.PAID, createdAt: { $gte: startOfMonth } } },
                 { $group: { _id: null, total: { $sum: '$amount' } } },
             ]),
-            Payment.aggregate([
-                { $match: { status: PaymentStatus.PAID, createdAt: { $gte: startOfYear } } },
+            payment_model_1.Payment.aggregate([
+                { $match: { status: enums_1.PaymentStatus.PAID, createdAt: { $gte: startOfYear } } },
                 { $group: { _id: null, total: { $sum: '$amount' } } },
             ]),
-            Booking.countDocuments({ status: BookingStatus.PENDING }),
-            Booking.countDocuments({ status: BookingStatus.COMPLETED }),
-            Invoice.countDocuments({ status: InvoiceStatus.UNPAID }),
-            Payment.find()
+            booking_model_1.Booking.countDocuments({ status: enums_1.BookingStatus.PENDING }),
+            booking_model_1.Booking.countDocuments({ status: enums_1.BookingStatus.COMPLETED }),
+            invoice_model_1.Invoice.countDocuments({ status: enums_1.InvoiceStatus.UNPAID }),
+            payment_model_1.Payment.find()
                 .sort({ createdAt: -1 })
                 .limit(10)
                 .populate({
@@ -182,8 +188,8 @@ const ReportingService = {
     async getMonthlyTrends() {
         const oneYearAgo = new Date();
         oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
-        const monthlyData = await Payment.aggregate([
-            { $match: { status: PaymentStatus.PAID, createdAt: { $gte: oneYearAgo } } },
+        const monthlyData = await payment_model_1.Payment.aggregate([
+            { $match: { status: enums_1.PaymentStatus.PAID, createdAt: { $gte: oneYearAgo } } },
             {
                 $group: {
                     _id: { year: { $year: '$createdAt' }, month: { $month: '$createdAt' } },
@@ -207,8 +213,8 @@ const ReportingService = {
     async getRevenueLineChartData(days = 30) {
         const startDate = new Date();
         startDate.setDate(startDate.getDate() - days);
-        const dailyRevenue = await Payment.aggregate([
-            { $match: { status: PaymentStatus.PAID, createdAt: { $gte: startDate } } },
+        const dailyRevenue = await payment_model_1.Payment.aggregate([
+            { $match: { status: enums_1.PaymentStatus.PAID, createdAt: { $gte: startDate } } },
             {
                 $group: {
                     _id: {
@@ -257,7 +263,7 @@ const ReportingService = {
         };
     },
     async getBookingStatusBarChartData() {
-        const bookingsByStatus = await Booking.aggregate([
+        const bookingsByStatus = await booking_model_1.Booking.aggregate([
             { $group: { _id: '$status', count: { $sum: 1 } } },
         ]);
         const statusLabels = {
@@ -295,11 +301,11 @@ const ReportingService = {
     async getServiceRevenueDonutData() {
         const today = new Date();
         const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-        const serviceRevenue = await Booking.aggregate([
-            { $match: { status: BookingStatus.COMPLETED, createdAt: { $gte: startOfMonth } } },
+        const serviceRevenue = await booking_model_1.Booking.aggregate([
+            { $match: { status: enums_1.BookingStatus.COMPLETED, createdAt: { $gte: startOfMonth } } },
             { $group: { _id: '$serviceId', totalAmount: { $sum: '$totalAmount' }, count: { $sum: 1 } } },
         ]);
-        const services = await Service.find();
+        const services = await service_model_1.Service.find();
         const donutData = serviceRevenue
             .map((item) => {
             const service = services.find(s => s._id.toString() === item._id.toString());
@@ -326,8 +332,8 @@ const ReportingService = {
         };
     },
     async getPaymentMethodDonutData() {
-        const paymentMethods = await Payment.aggregate([
-            { $match: { status: PaymentStatus.PAID } },
+        const paymentMethods = await payment_model_1.Payment.aggregate([
+            { $match: { status: enums_1.PaymentStatus.PAID } },
             { $group: { _id: '$method', totalAmount: { $sum: '$amount' }, count: { $sum: 1 } } },
         ]);
         const colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'];
@@ -354,7 +360,7 @@ const ReportingService = {
     async getDailyBookingComparisonData(days = 30) {
         const startDate = new Date();
         startDate.setDate(startDate.getDate() - days);
-        const bookings = await Booking.find({ createdAt: { $gte: startDate } }).select('createdAt status');
+        const bookings = await booking_model_1.Booking.find({ createdAt: { $gte: startDate } }).select('createdAt status');
         const chartData = Array.from({ length: days }, (_, index) => {
             const date = new Date();
             date.setDate(date.getDate() - (days - 1 - index));
@@ -387,8 +393,8 @@ const ReportingService = {
     async getCustomerAcquisitionLineData(months = 12) {
         const startDate = new Date();
         startDate.setMonth(startDate.getMonth() - months);
-        const userRole = await Role.findOne({ name: 'USER' });
-        const customersByMonth = await User.aggregate([
+        const userRole = await role_model_1.Role.findOne({ name: 'USER' });
+        const customersByMonth = await user_model_1.User.aggregate([
             { $match: { roleId: userRole?._id, createdAt: { $gte: startDate } } },
             {
                 $group: {
@@ -442,28 +448,28 @@ const ReportingService = {
         };
     },
     async getStaffPerformanceMetrics() {
-        const staffRole = await Role.findOne({ name: 'STAFF' });
-        const staffMembers = await User.find({ roleId: staffRole?._id, isActive: true }).select('id name email createdAt');
+        const staffRole = await role_model_1.Role.findOne({ name: 'STAFF' });
+        const staffMembers = await user_model_1.User.find({ roleId: staffRole?._id, isActive: true }).select('id name email createdAt');
         return Promise.all(staffMembers.map(async (staff) => {
             const today = new Date();
             const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
             const startOfWeek = new Date(today);
             startOfWeek.setDate(today.getDate() - today.getDay());
             const [totalBookings, completedBookings, pendingBookings, monthlyBookings, weeklyBookings, monthlyRevenue, weeklyRevenue, completionTimeDocs,] = await Promise.all([
-                Booking.countDocuments({ createdAt: { $gte: staff.createdAt } }),
-                Booking.countDocuments({ status: BookingStatus.COMPLETED, createdAt: { $gte: staff.createdAt } }),
-                Booking.countDocuments({ status: BookingStatus.PENDING, createdAt: { $gte: staff.createdAt } }),
-                Booking.countDocuments({ createdAt: { $gte: startOfMonth } }),
-                Booking.countDocuments({ createdAt: { $gte: startOfWeek } }),
-                Payment.aggregate([
-                    { $match: { status: PaymentStatus.PAID, bookingId: { $in: await Booking.find({ createdAt: { $gte: startOfMonth } }).distinct('_id') } } },
+                booking_model_1.Booking.countDocuments({ createdAt: { $gte: staff.createdAt } }),
+                booking_model_1.Booking.countDocuments({ status: enums_1.BookingStatus.COMPLETED, createdAt: { $gte: staff.createdAt } }),
+                booking_model_1.Booking.countDocuments({ status: enums_1.BookingStatus.PENDING, createdAt: { $gte: staff.createdAt } }),
+                booking_model_1.Booking.countDocuments({ createdAt: { $gte: startOfMonth } }),
+                booking_model_1.Booking.countDocuments({ createdAt: { $gte: startOfWeek } }),
+                payment_model_1.Payment.aggregate([
+                    { $match: { status: enums_1.PaymentStatus.PAID, bookingId: { $in: await booking_model_1.Booking.find({ createdAt: { $gte: startOfMonth } }).distinct('_id') } } },
                     { $group: { _id: null, total: { $sum: '$amount' } } },
                 ]),
-                Payment.aggregate([
-                    { $match: { status: PaymentStatus.PAID, bookingId: { $in: await Booking.find({ createdAt: { $gte: startOfWeek } }).distinct('_id') } } },
+                payment_model_1.Payment.aggregate([
+                    { $match: { status: enums_1.PaymentStatus.PAID, bookingId: { $in: await booking_model_1.Booking.find({ createdAt: { $gte: startOfWeek } }).distinct('_id') } } },
                     { $group: { _id: null, total: { $sum: '$amount' } } },
                 ]),
-                Booking.find({ status: BookingStatus.COMPLETED, createdAt: { $gte: staff.createdAt } }).select('createdAt updatedAt'),
+                booking_model_1.Booking.find({ status: enums_1.BookingStatus.COMPLETED, createdAt: { $gte: staff.createdAt } }).select('createdAt updatedAt'),
             ]);
             const completionTimes = completionTimeDocs.map(b => new Date(b.updatedAt).getTime() - new Date(b.createdAt).getTime());
             const avgMs = completionTimes.length > 0
@@ -489,19 +495,19 @@ const ReportingService = {
     async getStaffWorkloadDistribution() {
         const today = new Date();
         const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-        const staffRole = await Role.findOne({ name: 'STAFF' });
-        const staffMembers = await User.find({ roleId: staffRole?._id, isActive: true }).select('id name email');
+        const staffRole = await role_model_1.Role.findOne({ name: 'STAFF' });
+        const staffMembers = await user_model_1.User.find({ roleId: staffRole?._id, isActive: true }).select('id name email');
         const workloadData = await Promise.all(staffMembers.map(async (staff) => {
             const [pendingBookings, inProgressBookings, completedToday, completedThisMonth] = await Promise.all([
-                Booking.countDocuments({ status: BookingStatus.PENDING }),
-                Booking.countDocuments({ status: BookingStatus.IN_PROGRESS }),
-                Booking.countDocuments({
-                    status: BookingStatus.COMPLETED,
+                booking_model_1.Booking.countDocuments({ status: enums_1.BookingStatus.PENDING }),
+                booking_model_1.Booking.countDocuments({ status: enums_1.BookingStatus.IN_PROGRESS }),
+                booking_model_1.Booking.countDocuments({
+                    status: enums_1.BookingStatus.COMPLETED,
                     updatedAt: {
                         $gte: new Date(today.getFullYear(), today.getMonth(), today.getDate()),
                     },
                 }),
-                Booking.countDocuments({ status: BookingStatus.COMPLETED, updatedAt: { $gte: startOfMonth } }),
+                booking_model_1.Booking.countDocuments({ status: enums_1.BookingStatus.COMPLETED, updatedAt: { $gte: startOfMonth } }),
             ]);
             return {
                 staffId: staff._id.toString(),
@@ -514,8 +520,8 @@ const ReportingService = {
             };
         }));
         const [totalPendingBookings, totalInProgressBookings] = await Promise.all([
-            Booking.countDocuments({ status: BookingStatus.PENDING }),
-            Booking.countDocuments({ status: BookingStatus.IN_PROGRESS }),
+            booking_model_1.Booking.countDocuments({ status: enums_1.BookingStatus.PENDING }),
+            booking_model_1.Booking.countDocuments({ status: enums_1.BookingStatus.IN_PROGRESS }),
         ]);
         return {
             totalPendingBookings,
@@ -526,24 +532,24 @@ const ReportingService = {
     async getStaffEfficiencyReport(startDate, endDate) {
         const start = startDate ? new Date(startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
         const end = endDate ? new Date(endDate) : new Date();
-        const staffRole = await Role.findOne({ name: 'STAFF' });
-        const staffMembers = await User.find({ roleId: staffRole?._id, isActive: true }).select('id name email');
+        const staffRole = await role_model_1.Role.findOne({ name: 'STAFF' });
+        const staffMembers = await user_model_1.User.find({ roleId: staffRole?._id, isActive: true }).select('id name email');
         const efficiencyData = await Promise.all(staffMembers.map(async (staff) => {
             const [totalBookings, completedBookings, revenueGenerated, avgOrderResult] = await Promise.all([
-                Booking.countDocuments({ createdAt: { $gte: start, $lte: end } }),
-                Booking.countDocuments({ status: BookingStatus.COMPLETED, createdAt: { $gte: start, $lte: end } }),
-                Payment.aggregate([
+                booking_model_1.Booking.countDocuments({ createdAt: { $gte: start, $lte: end } }),
+                booking_model_1.Booking.countDocuments({ status: enums_1.BookingStatus.COMPLETED, createdAt: { $gte: start, $lte: end } }),
+                payment_model_1.Payment.aggregate([
                     {
                         $match: {
-                            status: PaymentStatus.PAID,
+                            status: enums_1.PaymentStatus.PAID,
                             bookingId: {
-                                $in: await Booking.find({ createdAt: { $gte: start, $lte: end } }).distinct('_id'),
+                                $in: await booking_model_1.Booking.find({ createdAt: { $gte: start, $lte: end } }).distinct('_id'),
                             },
                         },
                     },
                     { $group: { _id: null, total: { $sum: '$amount' } } },
                 ]),
-                Booking.aggregate([
+                booking_model_1.Booking.aggregate([
                     { $match: { createdAt: { $gte: start, $lte: end } } },
                     { $group: { _id: null, avg: { $avg: '$totalAmount' } } },
                 ]),
@@ -570,4 +576,4 @@ const ReportingService = {
         return efficiencyData.sort((a, b) => b.efficiency - a.efficiency);
     },
 };
-export { ReportingService };
+exports.ReportingService = ReportingService;

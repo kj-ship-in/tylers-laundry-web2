@@ -1,35 +1,41 @@
-import dotenv from 'dotenv';
-import { z } from 'zod';
-dotenv.config();
-const envSchema = z.object({
-    NODE_ENV: z
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.env = void 0;
+const dotenv_1 = __importDefault(require("dotenv"));
+const zod_1 = require("zod");
+dotenv_1.default.config();
+const envSchema = zod_1.z.object({
+    NODE_ENV: zod_1.z
         .enum(['development', 'production', 'test'])
         .default('development'),
-    PORT: z
+    PORT: zod_1.z
         .string()
         .transform(Number)
-        .pipe(z.number().min(1).max(65535))
+        .pipe(zod_1.z.number().min(1).max(65535))
         .default(3000),
-    JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
-    JWT_REFRESH_SECRET: z
+    JWT_SECRET: zod_1.z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
+    JWT_REFRESH_SECRET: zod_1.z
         .string()
         .min(32, 'JWT_REFRESH_SECRET must be at least 32 characters')
         .optional(),
-    JWT_EXPIRES_IN: z.string().default('1h'),
-    JWT_REFRESH_EXPIRES_IN: z.string().default('7d'),
-    MONGODB_URI: z.string().min(1, 'MONGODB_URI is required'),
-    FRONTEND_URL: z.url().default('http://localhost:3000'),
-    ENABLE_CRON_JOBS: z.string().default('false'),
-    CLOUDINARY_NAME: z.string().optional(),
-    CLOUDINARY_KEY: z.string().optional(),
-    CLOUDINARY_SECRET: z.string().optional(),
-    EMAIL_HOST: z.string().optional(),
-    EMAIL_PORT: z.string().transform(Number).pipe(z.number()).optional(),
-    EMAIL_USER: z.string().optional(),
-    EMAIL_PASS: z.string().optional(),
-    EMAIL_FROM: z.email().optional(),
-    REDIS_URL: z.url().optional(),
-    LOG_LEVEL: z.enum(['error', 'warn', 'info', 'http', 'debug']).default('info'),
+    JWT_EXPIRES_IN: zod_1.z.string().default('1h'),
+    JWT_REFRESH_EXPIRES_IN: zod_1.z.string().default('7d'),
+    MONGODB_URI: zod_1.z.string().min(1, 'MONGODB_URI is required'),
+    FRONTEND_URL: zod_1.z.url().default('http://localhost:3000'),
+    ENABLE_CRON_JOBS: zod_1.z.string().default('false'),
+    CLOUDINARY_NAME: zod_1.z.string().optional(),
+    CLOUDINARY_KEY: zod_1.z.string().optional(),
+    CLOUDINARY_SECRET: zod_1.z.string().optional(),
+    EMAIL_HOST: zod_1.z.string().optional(),
+    EMAIL_PORT: zod_1.z.string().transform(Number).pipe(zod_1.z.number()).optional(),
+    EMAIL_USER: zod_1.z.string().optional(),
+    EMAIL_PASS: zod_1.z.string().optional(),
+    EMAIL_FROM: zod_1.z.email().optional(),
+    REDIS_URL: zod_1.z.url().optional(),
+    LOG_LEVEL: zod_1.z.enum(['error', 'warn', 'info', 'http', 'debug']).default('info'),
 });
 const validateEnv = () => {
     try {
@@ -56,7 +62,7 @@ const validateEnv = () => {
         });
     }
     catch (error) {
-        if (error instanceof z.ZodError) {
+        if (error instanceof zod_1.z.ZodError) {
             const missingVars = error.issues.map((err) => `${err.path.join('.')}: ${err.message}`);
             console.error('Environment validation failed:', missingVars);
             process.exit(1);
@@ -64,4 +70,4 @@ const validateEnv = () => {
         throw error;
     }
 };
-export const env = validateEnv();
+exports.env = validateEnv();

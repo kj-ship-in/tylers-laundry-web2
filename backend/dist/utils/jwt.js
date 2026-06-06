@@ -1,42 +1,51 @@
-import jwt from 'jsonwebtoken';
-import { env } from '../config/env';
-import logger from './logger';
-export const generateToken = (payload) => {
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getTokenExpiry = exports.decodeToken = exports.verifyRefreshToken = exports.verifyToken = exports.generateTokenPair = exports.generateRefreshToken = exports.generateToken = void 0;
+const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+const env_1 = require("../config/env");
+const logger_1 = __importDefault(require("./logger"));
+const generateToken = (payload) => {
     try {
-        return jwt.sign({ ...payload, type: 'access' }, env.JWT_SECRET, {
+        return jsonwebtoken_1.default.sign({ ...payload, type: 'access' }, env_1.env.JWT_SECRET, {
             expiresIn: '15m',
             issuer: 'tylers-laundry-api',
             audience: 'tylers-laundry-app',
         });
     }
     catch (error) {
-        logger.error('Error generating access token:', error);
+        logger_1.default.error('Error generating access token:', error);
         throw new Error('Failed to generate access token');
     }
 };
-export const generateRefreshToken = (payload) => {
+exports.generateToken = generateToken;
+const generateRefreshToken = (payload) => {
     try {
-        const refreshSecret = env.JWT_REFRESH_SECRET ?? env.JWT_SECRET;
-        return jwt.sign({ ...payload, type: 'refresh' }, refreshSecret, {
+        const refreshSecret = env_1.env.JWT_REFRESH_SECRET ?? env_1.env.JWT_SECRET;
+        return jsonwebtoken_1.default.sign({ ...payload, type: 'refresh' }, refreshSecret, {
             expiresIn: '7d',
             issuer: 'tylers-laundry-api',
             audience: 'tylers-laundry-app',
         });
     }
     catch (error) {
-        logger.error('Error generating refresh token:', error);
+        logger_1.default.error('Error generating refresh token:', error);
         throw new Error('Failed to generate refresh token');
     }
 };
-export const generateTokenPair = (payload) => {
+exports.generateRefreshToken = generateRefreshToken;
+const generateTokenPair = (payload) => {
     return {
-        accessToken: generateToken(payload),
-        refreshToken: generateRefreshToken(payload),
+        accessToken: (0, exports.generateToken)(payload),
+        refreshToken: (0, exports.generateRefreshToken)(payload),
     };
 };
-export const verifyToken = (token) => {
+exports.generateTokenPair = generateTokenPair;
+const verifyToken = (token) => {
     try {
-        const decoded = jwt.verify(token, env.JWT_SECRET, {
+        const decoded = jsonwebtoken_1.default.verify(token, env_1.env.JWT_SECRET, {
             issuer: 'tylers-laundry-api',
             audience: 'tylers-laundry-app',
         });
@@ -46,22 +55,23 @@ export const verifyToken = (token) => {
         return decoded;
     }
     catch (error) {
-        if (error instanceof jwt.JsonWebTokenError) {
-            logger.warn('Invalid JWT token:', error.message);
+        if (error instanceof jsonwebtoken_1.default.JsonWebTokenError) {
+            logger_1.default.warn('Invalid JWT token:', error.message);
         }
-        else if (error instanceof jwt.TokenExpiredError) {
-            logger.info('JWT token expired');
+        else if (error instanceof jsonwebtoken_1.default.TokenExpiredError) {
+            logger_1.default.info('JWT token expired');
         }
         else {
-            logger.error('JWT verification error:', error);
+            logger_1.default.error('JWT verification error:', error);
         }
         throw error;
     }
 };
-export const verifyRefreshToken = (token) => {
+exports.verifyToken = verifyToken;
+const verifyRefreshToken = (token) => {
     try {
-        const refreshSecret = env.JWT_REFRESH_SECRET ?? env.JWT_SECRET;
-        const decoded = jwt.verify(token, refreshSecret, {
+        const refreshSecret = env_1.env.JWT_REFRESH_SECRET ?? env_1.env.JWT_SECRET;
+        const decoded = jsonwebtoken_1.default.verify(token, refreshSecret, {
             issuer: 'tylers-laundry-api',
             audience: 'tylers-laundry-app',
         });
@@ -71,37 +81,40 @@ export const verifyRefreshToken = (token) => {
         return decoded;
     }
     catch (error) {
-        if (error instanceof jwt.JsonWebTokenError) {
-            logger.warn('Invalid refresh token:', error.message);
+        if (error instanceof jsonwebtoken_1.default.JsonWebTokenError) {
+            logger_1.default.warn('Invalid refresh token:', error.message);
         }
-        else if (error instanceof jwt.TokenExpiredError) {
-            logger.info('Refresh token expired');
+        else if (error instanceof jsonwebtoken_1.default.TokenExpiredError) {
+            logger_1.default.info('Refresh token expired');
         }
         else {
-            logger.error('Refresh token verification error:', error);
+            logger_1.default.error('Refresh token verification error:', error);
         }
         throw error;
     }
 };
-export const decodeToken = (token) => {
+exports.verifyRefreshToken = verifyRefreshToken;
+const decodeToken = (token) => {
     try {
-        return jwt.decode(token);
+        return jsonwebtoken_1.default.decode(token);
     }
     catch (error) {
-        logger.error('Error decoding token:', error);
+        logger_1.default.error('Error decoding token:', error);
         return null;
     }
 };
-export const getTokenExpiry = (token) => {
+exports.decodeToken = decodeToken;
+const getTokenExpiry = (token) => {
     try {
-        const decoded = jwt.decode(token);
+        const decoded = jsonwebtoken_1.default.decode(token);
         if (decoded?.exp) {
             return new Date(decoded.exp * 1000);
         }
         return null;
     }
     catch (error) {
-        logger.error('Error getting token expiry:', error);
+        logger_1.default.error('Error getting token expiry:', error);
         return null;
     }
 };
+exports.getTokenExpiry = getTokenExpiry;

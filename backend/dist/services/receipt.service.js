@@ -1,10 +1,16 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getReceiptStats = exports.generateReceiptsReport = exports.generateReceiptPDF = exports.deleteReceipt = exports.updateReceipt = exports.getReceiptById = exports.getAllReceipts = exports.createReceipt = void 0;
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable no-console */
-import { Invoice } from '../models/invoice.model';
-import { Booking } from '../models/booking.model';
-import { Receipt } from '../models/receipt.model';
-import ExcelReportGenerator from '../utils/excel-generator';
-import PDFGenerator from '../utils/pdf-generator';
+const invoice_model_1 = require("../models/invoice.model");
+const booking_model_1 = require("../models/booking.model");
+const receipt_model_1 = require("../models/receipt.model");
+const excel_generator_1 = __importDefault(require("../utils/excel-generator"));
+const pdf_generator_1 = __importDefault(require("../utils/pdf-generator"));
 const receiptPopulate = [
     {
         path: 'invoiceId',
@@ -15,7 +21,7 @@ const receiptPopulate = [
     },
 ];
 const generateReceiptNumber = async () => {
-    const last = await Receipt.findOne().sort({ createdAt: -1 }).select('receiptNo');
+    const last = await receipt_model_1.Receipt.findOne().sort({ createdAt: -1 }).select('receiptNo');
     let nextNumber = 1;
     if (last?.receiptNo) {
         const match = last.receiptNo.match(/RCP-(\d+)/);
@@ -24,12 +30,13 @@ const generateReceiptNumber = async () => {
     }
     return `RCP-${nextNumber.toString().padStart(4, '0')}`;
 };
-export const createReceipt = async (data) => {
+const createReceipt = async (data) => {
     const receiptNo = data.receiptNo ?? (await generateReceiptNumber());
-    const receipt = await Receipt.create({ ...data, receiptNo });
-    return Receipt.findById(receipt._id).populate(receiptPopulate);
+    const receipt = await receipt_model_1.Receipt.create({ ...data, receiptNo });
+    return receipt_model_1.Receipt.findById(receipt._id).populate(receiptPopulate);
 };
-export const getAllReceipts = async (options) => {
+exports.createReceipt = createReceipt;
+const getAllReceipts = async (options) => {
     const { page = 1, limit = 10, startDate, endDate, status, search } = options ?? {};
     const skip = (page - 1) * limit;
     const where = {};
@@ -37,7 +44,7 @@ export const getAllReceipts = async (options) => {
         where.issuedAt = { $gte: new Date(startDate), $lte: new Date(endDate) };
     }
     if (status) {
-        const matchingInvoices = await Invoice.find({ status: status }).select('_id');
+        const matchingInvoices = await invoice_model_1.Invoice.find({ status: status }).select('_id');
         where.invoiceId = { $in: matchingInvoices.map(i => i._id) };
     }
     if (search) {
@@ -47,25 +54,26 @@ export const getAllReceipts = async (options) => {
         ];
     }
     const [receipts, total] = await Promise.all([
-        Receipt.find(where)
+        receipt_model_1.Receipt.find(where)
             .populate(receiptPopulate)
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit),
-        Receipt.countDocuments(where),
+        receipt_model_1.Receipt.countDocuments(where),
     ]);
     return { receipts, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } };
 };
-export const getReceiptById = async (id) => {
-    const receipt = await Receipt.findById(id);
+exports.getAllReceipts = getAllReceipts;
+const getReceiptById = async (id) => {
+    const receipt = await receipt_model_1.Receipt.findById(id);
     if (!receipt)
         return null;
-    const invoice = await Invoice.findById(receipt.invoiceId).populate('paymentId');
+    const invoice = await invoice_model_1.Invoice.findById(receipt.invoiceId).populate('paymentId');
     if (!invoice?.paymentId) {
         return { ...receipt.toObject(), invoice: null, payment: null, booking: null, user: null, service: null };
     }
     const payment = invoice.paymentId;
-    const booking = await Booking.findById(payment.bookingId).populate('userId').populate('serviceId');
+    const booking = await booking_model_1.Booking.findById(payment.bookingId).populate('userId').populate('serviceId');
     return {
         ...receipt.toObject(),
         invoice: invoice?.toObject(),
@@ -75,14 +83,17 @@ export const getReceiptById = async (id) => {
         service: booking?.serviceId ?? null,
     };
 };
-export const updateReceipt = async (id, data) => {
-    return Receipt.findByIdAndUpdate(id, data, { new: true }).populate(receiptPopulate);
+exports.getReceiptById = getReceiptById;
+const updateReceipt = async (id, data) => {
+    return receipt_model_1.Receipt.findByIdAndUpdate(id, data, { new: true }).populate(receiptPopulate);
 };
-export const deleteReceipt = async (id) => {
-    return Receipt.findByIdAndDelete(id);
+exports.updateReceipt = updateReceipt;
+const deleteReceipt = async (id) => {
+    return receipt_model_1.Receipt.findByIdAndDelete(id);
 };
-export const generateReceiptPDF = async (receiptId) => {
-    const receipt = await getReceiptById(receiptId);
+exports.deleteReceipt = deleteReceipt;
+const generateReceiptPDF = async (receiptId) => {
+    const receipt = await (0, exports.getReceiptById)(receiptId);
     if (!receipt)
         throw new Error('Receipt not found');
     console.log('Receipt data for PDF generation:', {
@@ -93,21 +104,22 @@ export const generateReceiptPDF = async (receiptId) => {
         hasUser: !!receipt.user,
         hasService: !!receipt.service,
     });
-    const pdfBuffer = await PDFGenerator.generateReceiptPDF(receipt);
+    const pdfBuffer = await pdf_generator_1.default.generateReceiptPDF(receipt);
     const filename = `receipt-${receipt.receiptNo}-${Date.now()}.pdf`;
-    const filepath = await PDFGenerator.savePDFToFile(pdfBuffer, filename);
+    const filepath = await pdf_generator_1.default.savePDFToFile(pdfBuffer, filename);
     return { pdfBuffer, filepath, filename };
 };
-export const generateReceiptsReport = async (filters) => {
+exports.generateReceiptPDF = generateReceiptPDF;
+const generateReceiptsReport = async (filters) => {
     const where = {};
     if (filters.startDate && filters.endDate) {
         where.issuedAt = { $gte: new Date(filters.startDate), $lte: new Date(filters.endDate) };
     }
     if (filters.status) {
-        const matchingInvoices = await Invoice.find({ status: filters.status }).select('_id');
+        const matchingInvoices = await invoice_model_1.Invoice.find({ status: filters.status }).select('_id');
         where.invoiceId = { $in: matchingInvoices.map(i => i._id) };
     }
-    const receipts = await Receipt.find(where)
+    const receipts = await receipt_model_1.Receipt.find(where)
         .populate(receiptPopulate)
         .sort({ createdAt: -1 });
     // toJSON() applies transforms recursively across all nested models:
@@ -123,26 +135,27 @@ export const generateReceiptsReport = async (filters) => {
         };
     });
     if (filters.format === 'excel') {
-        const excelBuffer = await ExcelReportGenerator.generateReceiptsReport(flattenedReceipts, filters);
+        const excelBuffer = await excel_generator_1.default.generateReceiptsReport(flattenedReceipts, filters);
         const filename = `receipts-report-${Date.now()}.xlsx`;
-        const filepath = await ExcelReportGenerator.saveExcelToFile(excelBuffer, filename);
+        const filepath = await excel_generator_1.default.saveExcelToFile(excelBuffer, filename);
         return { buffer: excelBuffer, filepath, filename, format: 'excel' };
     }
     if (filters.format === 'pdf') {
-        const pdfBuffer = await PDFGenerator.generateReceiptsReportPDF(flattenedReceipts, filters);
+        const pdfBuffer = await pdf_generator_1.default.generateReceiptsReportPDF(flattenedReceipts, filters);
         const filename = `receipts-report-${Date.now()}.pdf`;
-        const filepath = await PDFGenerator.savePDFToFile(pdfBuffer, filename);
+        const filepath = await pdf_generator_1.default.savePDFToFile(pdfBuffer, filename);
         return { buffer: pdfBuffer, filepath, filename, format: 'pdf' };
     }
     return { data: receipts, format: 'json' };
 };
-export const getReceiptStats = async () => {
+exports.generateReceiptsReport = generateReceiptsReport;
+const getReceiptStats = async () => {
     const [totalReceipts, thisMonth, lastMonth] = await Promise.all([
-        Receipt.countDocuments(),
-        Receipt.countDocuments({
+        receipt_model_1.Receipt.countDocuments(),
+        receipt_model_1.Receipt.countDocuments({
             createdAt: { $gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) },
         }),
-        Receipt.countDocuments({
+        receipt_model_1.Receipt.countDocuments({
             createdAt: {
                 $gte: new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1),
                 $lte: new Date(new Date().getFullYear(), new Date().getMonth(), 0),
@@ -157,3 +170,4 @@ export const getReceiptStats = async () => {
         growth: lastMonth > 0 ? ((thisMonth - lastMonth) / lastMonth) * 100 : 0,
     };
 };
+exports.getReceiptStats = getReceiptStats;

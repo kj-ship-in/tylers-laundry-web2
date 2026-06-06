@@ -1,11 +1,16 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import fs from 'fs/promises';
-import path from 'path';
-import puppeteer from 'puppeteer';
+const promises_1 = __importDefault(require("fs/promises"));
+const path_1 = __importDefault(require("path"));
+const puppeteer_1 = __importDefault(require("puppeteer"));
 let browser = null;
 const PDFGenerator = {
     async initBrowser() {
-        browser ??= await puppeteer.launch({
+        browser ??= await puppeteer_1.default.launch({
             headless: true,
             args: ['--no-sandbox', '--disable-setuid-sandbox'],
         });
@@ -574,9 +579,9 @@ const PDFGenerator = {
     },
     async savePDFToFile(pdfBuffer, filename) {
         const uploadsDir = 'uploads/reports';
-        await fs.mkdir(uploadsDir, { recursive: true });
-        const filepath = path.join(uploadsDir, filename);
-        await fs.writeFile(filepath, pdfBuffer);
+        await promises_1.default.mkdir(uploadsDir, { recursive: true });
+        const filepath = path_1.default.join(uploadsDir, filename);
+        await promises_1.default.writeFile(filepath, pdfBuffer);
         return filepath;
     },
     async generateInvoicesReportPDF(invoices, filters) {
@@ -914,4 +919,4 @@ const PDFGenerator = {
             : 'No filters applied';
     },
 };
-export default PDFGenerator;
+exports.default = PDFGenerator;

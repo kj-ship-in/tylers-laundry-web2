@@ -1,9 +1,14 @@
-import mongoose from 'mongoose';
-import { Booking } from '../models/booking.model';
-import { Payment } from '../models/payment.model';
-import { Service } from '../models/service.model';
-import { User } from '../models/user.model';
-import logger from '../utils/logger';
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const mongoose_1 = __importDefault(require("mongoose"));
+const booking_model_1 = require("../models/booking.model");
+const payment_model_1 = require("../models/payment.model");
+const service_model_1 = require("../models/service.model");
+const user_model_1 = require("../models/user.model");
+const logger_1 = __importDefault(require("../utils/logger"));
 class DatabaseService {
     async findUserByEmail(email, includePassword = false) {
         const projection = {
@@ -21,7 +26,7 @@ class DatabaseService {
         };
         if (includePassword)
             projection.password = 1;
-        return User.findOne({ email, deletedAt: null, isActive: true }, projection).populate('roleId');
+        return user_model_1.User.findOne({ email, deletedAt: null, isActive: true }, projection).populate('roleId');
     }
     async findUserById(id, includePassword = false) {
         const projection = {
@@ -39,34 +44,34 @@ class DatabaseService {
         };
         if (includePassword)
             projection.password = 1;
-        return User.findOne({ _id: id, deletedAt: null, isActive: true }, projection).populate('roleId');
+        return user_model_1.User.findOne({ _id: id, deletedAt: null, isActive: true }, projection).populate('roleId');
     }
     async getBookingsByUserId(userId, page = 1, limit = 10, status) {
         const skip = (page - 1) * limit;
         const where = { userId, ...(status && { status }) };
         const [bookings, total] = await Promise.all([
-            Booking.find(where)
+            booking_model_1.Booking.find(where)
                 .populate({ path: 'serviceId', select: 'id type description price estimatedTime' })
                 .populate('payments')
                 .sort({ createdAt: -1 })
                 .skip(skip)
                 .limit(limit),
-            Booking.countDocuments(where),
+            booking_model_1.Booking.countDocuments(where),
         ]);
         return { bookings, pagination: { page, limit, total, pages: Math.ceil(total / limit) } };
     }
     async getActiveServices() {
-        return Service.find({ isActive: true }).sort({ type: 1, price: 1 });
+        return service_model_1.Service.find({ isActive: true }).sort({ type: 1, price: 1 });
     }
     async getBookingStats(startDate, endDate) {
         const dateFilter = startDate && endDate ? { createdAt: { $gte: startDate, $lte: endDate } } : {};
         const [totalBookings, statusCounts, revenueData, popularServices] = await Promise.all([
-            Booking.countDocuments(dateFilter),
-            Booking.aggregate([
+            booking_model_1.Booking.countDocuments(dateFilter),
+            booking_model_1.Booking.aggregate([
                 { $match: dateFilter },
                 { $group: { _id: '$status', count: { $sum: 1 } } },
             ]),
-            Payment.aggregate([
+            payment_model_1.Payment.aggregate([
                 {
                     $match: {
                         status: 'PAID',
@@ -75,7 +80,7 @@ class DatabaseService {
                 },
                 { $group: { _id: null, total: { $sum: '$amount' }, avg: { $avg: '$amount' } } },
             ]),
-            Booking.aggregate([
+            booking_model_1.Booking.aggregate([
                 { $match: dateFilter },
                 { $group: { _id: '$serviceId', count: { $sum: 1 } } },
                 { $sort: { count: -1 } },
@@ -90,7 +95,7 @@ class DatabaseService {
         };
     }
     async executeTransaction(callback) {
-        const session = await mongoose.startSession();
+        const session = await mongoose_1.default.startSession();
         session.startTransaction();
         try {
             const result = await callback(session);
@@ -99,7 +104,7 @@ class DatabaseService {
         }
         catch (error) {
             await session.abortTransaction();
-            logger.error('Transaction failed:', error);
+            logger_1.default.error('Transaction failed:', error);
             throw error;
         }
         finally {
@@ -108,16 +113,16 @@ class DatabaseService {
     }
     async healthCheck() {
         try {
-            await mongoose.connection.db?.admin().ping();
+            await mongoose_1.default.connection.db?.admin().ping();
             return true;
         }
         catch (error) {
-            logger.error('Database health check failed:', error);
+            logger_1.default.error('Database health check failed:', error);
             return false;
         }
     }
     async disconnect() {
-        await mongoose.disconnect();
+        await mongoose_1.default.disconnect();
     }
 }
-export default DatabaseService;
+exports.default = DatabaseService;
