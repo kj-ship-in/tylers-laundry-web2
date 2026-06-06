@@ -1,0 +1,31 @@
+# Ignore build outputs
+node_modules
+dist
+build
+
+# Ignore environment files
+.env
+.env.*
+
+# Ignore test coverage
+coverage
+
+# Ignore Prisma generated client
+prisma/generated
+
+# Ignore compiled files
+*.js
+*.d.ts
+*.config.mjs
+
+# Ignore specific config files (optional)
+.eslintrc.js
+jest.config.js
+
+# Ignore logs
+*.log
+
+# .prettierignore
+.history
+./src/prisma/generated
+./coverage

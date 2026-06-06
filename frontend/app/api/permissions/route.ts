@@ -1,0 +1,82 @@
+import { NextResponse } from 'next/server';
+
+const PERMISSIONS = [
+  'USER_VIEW',
+  'USER_CREATE',
+  'USER_UPDATE',
+  'USER_DELETE',
+  'USER_CONFIRM_STAFF',
+  'PROFILE_VIEW_OWN',
+  'PROFILE_UPDATE_OWN',
+  'BOOKING_VIEW_OWN',
+  'BOOKING_VIEW_ALL',
+  'BOOKING_CREATE',
+  'BOOKING_UPDATE',
+  'BOOKING_UPDATE_STATUS',
+  'BOOKING_CREATE_FOR_CLIENT',
+  'BOOKING_DELETE',
+  'SERVICE_VIEW',
+  'SERVICE_CREATE',
+  'SERVICE_UPDATE',
+  'SERVICE_DELETE',
+  'PAYMENT_VIEW_OWN',
+  'PAYMENT_VIEW_ALL',
+  'PAYMENT_CREATE',
+  'PAYMENT_UPDATE',
+  'PAYMENT_DELETE',
+  'PAYMENT_PROCESS',
+  'INVOICE_VIEW_OWN',
+  'INVOICE_VIEW_ALL',
+  'INVOICE_CREATE',
+  'INVOICE_UPDATE',
+  'INVOICE_DELETE',
+  'INVOICE_GENERATE',
+  'RECEIPT_VIEW_OWN',
+  'RECEIPT_VIEW_ALL',
+  'RECEIPT_CREATE',
+  'RECEIPT_UPDATE',
+  'RECEIPT_DELETE',
+  'RECEIPT_GENERATE',
+  'TESTIMONIAL_VIEW',
+  'TESTIMONIAL_CREATE',
+  'TESTIMONIAL_UPDATE',
+  'TESTIMONIAL_DELETE',
+  'TESTIMONIAL_MANAGE',
+  'ANALYTICS_VIEW',
+  'REPORTS_VIEW',
+  'REPORTS_GENERATE',
+  'REPORTS_EXPORT',
+  'PDF_GENERATE_INVOICE',
+  'PDF_GENERATE_RECEIPT',
+  'PDF_GENERATE_REPORT',
+  'SETTINGS_UPDATE',
+  'STAFF_MANAGE',
+  'STAFF_VIEW',
+  'STAFF_CREATE',
+  'STAFF_UPDATE',
+  'STAFF_DELETE',
+  'ROLE_VIEW',
+  'ROLE_CREATE',
+  'ROLE_UPDATE',
+  'ROLE_DELETE',
+  'PERMISSION_ASSIGN',
+];
+
+export async function GET() {
+  try {
+    return NextResponse.json({
+      success: true,
+      data: PERMISSIONS,
+      message: 'Permissions retrieved successfully',
+    });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        success: false,
+        message: 'Failed to retrieve permissions',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      },
+      { status: 500 },
+    );
+  }
+}

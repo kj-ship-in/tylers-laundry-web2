@@ -1,0 +1,18 @@
+node_modules
+# Keep environment variables out of version control
+.env
+
+.history
+coverage
+
+./src/prisma/generated/prisma
+
+# Upload directories
+uploads/*
+!uploads/.gitkeep
+
+# Dependency directories
+/.pnp.js
+.pnp.cjs
+.pnp.mjs
+/yarn.lock

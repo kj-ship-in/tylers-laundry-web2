@@ -1,0 +1,223 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { Invoice } from '../models/invoice.model';
+import { Payment } from '../models/payment.model';
+import { InvoiceStatus } from '../types/enums';
+import { InvoiceRequest } from '../types/invoice.d';
+import ExcelReportGenerator from '../utils/excel-generator';
+import PDFGenerator from '../utils/pdf-generator';
+
+const invoicePopulate = [
+  {
+    path: 'paymentId',
+    populate: { path: 'bookingId', populate: [{ path: 'userId' }, { path: 'serviceId' }] },
+  },
+  'receipt',
+];
+
+const generateInvoiceNumber = async (): Promise<string> => {
+  const last = await Invoice.findOne().sort({ createdAt: -1 }).select('invoiceNo');
+  let nextNumber = 1;
+  if (last?.invoiceNo) {
+    const match = last.invoiceNo.match(/INV-(\d+)/);
+    if (match) nextNumber = parseInt(match[1], 10) + 1;
+  }
+  return `INV-${nextNumber.toString().padStart(4, '0')}`;
+};
+
+export const createInvoice = async (data: InvoiceRequest) => {
+  const invoiceNo = await generateInvoiceNumber();
+  const invoice = await Invoice.create({ ...data, invoiceNo });
+  return Invoice.findById(invoice._id).populate(invoicePopulate as any);
+};
+
+export const getAllInvoices = async (options?: {
+  page?: number;
+  limit?: number;
+  status?: string;
+  startDate?: string;
+  endDate?: string;
+  search?: string;
+}) => {
+  const { page = 1, limit = 10, status, startDate, endDate, search } = options ?? {};
+  const skip = (page - 1) * limit;
+
+  const where: any = {};
+  if (status) where.status = status;
+  if (startDate && endDate) {
+    where.issuedAt = { $gte: new Date(startDate), $lte: new Date(endDate) };
+  }
+
+  if (search) {
+    const matchingPayments = await Payment.aggregate([
+      {
+        $lookup: {
+          from: 'bookings',
+          localField: 'bookingId',
+          foreignField: '_id',
+          as: 'booking',
+        },
+      },
+      { $unwind: '$booking' },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'booking.userId',
+          foreignField: '_id',
+          as: 'user',
+        },
+      },
+      { $unwind: '$user' },
+      {
+        $match: {
+          $or: [
+            { 'user.name': { $regex: search, $options: 'i' } },
+            { 'user.email': { $regex: search, $options: 'i' } },
+          ],
+        },
+      },
+      { $project: { _id: 1 } },
+    ]);
+
+    const paymentIds = matchingPayments.map((p: any) => p._id);
+    where.$or = [
+      { invoiceNo: { $regex: search, $options: 'i' } },
+      { paymentId: { $in: paymentIds } },
+    ];
+  }
+
+  const [invoices, total] = await Promise.all([
+    Invoice.find(where)
+      .populate(invoicePopulate as any)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit),
+    Invoice.countDocuments(where),
+  ]);
+
+  return {
+    invoices,
+    pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+  };
+};
+
+export const getInvoiceById = async (id: string) => {
+  return Invoice.findById(id).populate(invoicePopulate as any);
+};
+
+export const updateInvoice = async (id: string, data: any) => {
+  return Invoice.findByIdAndUpdate(id, data, { new: true }).populate(invoicePopulate as any);
+};
+
+export const deleteInvoice = async (id: string) => {
+  return Invoice.findByIdAndDelete(id);
+};
+
+export const generateInvoicePDF = async (invoiceId: string) => {
+  const invoice = await getInvoiceById(invoiceId);
+  if (!invoice) throw new Error('Invoice not found');
+
+  const invoiceData = {
+    invoice,
+    payment: (invoice as any).paymentId,
+    booking: (invoice as any).paymentId?.bookingId,
+    user: (invoice as any).paymentId?.bookingId?.userId,
+    service: (invoice as any).paymentId?.bookingId?.serviceId,
+  };
+
+  const pdfBuffer = await PDFGenerator.generateInvoicePDF(invoiceData);
+  const filename = `invoice-${invoice.invoiceNo}-${Date.now()}.pdf`;
+  const filepath = await PDFGenerator.savePDFToFile(pdfBuffer, filename);
+  return { pdfBuffer, filepath, filename };
+};
+
+export const generateInvoicesReport = async (filters: {
+  format: 'pdf' | 'excel';
+  status?: string;
+  startDate?: string;
+  endDate?: string;
+}) => {
+  const where: any = {};
+  if (filters.status) where.status = filters.status;
+  if (filters.startDate && filters.endDate) {
+    where.issuedAt = { $gte: new Date(filters.startDate), $lte: new Date(filters.endDate) };
+  }
+
+  const invoices = await Invoice.find(where)
+    .populate(invoicePopulate as any)
+    .sort({ createdAt: -1 });
+
+  if (filters.format === 'excel') {
+    const excelBuffer = await ExcelReportGenerator.generateInvoicesReport(invoices, filters);
+    const filename = `invoices-report-${Date.now()}.xlsx`;
+    const filepath = await ExcelReportGenerator.saveExcelToFile(excelBuffer, filename);
+    return { buffer: excelBuffer, filepath, filename, format: 'excel' };
+  }
+
+  if (filters.format === 'pdf') {
+    const pdfBuffer = await PDFGenerator.generateInvoicesReportPDF(invoices, filters);
+    const filename = `invoices-report-${Date.now()}.pdf`;
+    const filepath = await PDFGenerator.savePDFToFile(pdfBuffer, filename);
+    return { buffer: pdfBuffer, filepath, filename, format: 'pdf' };
+  }
+
+  return { data: invoices, format: 'json' };
+};
+
+export const getOverdueInvoices = async (options: { page?: number; limit?: number }) => {
+  const { page = 1, limit = 10 } = options;
+  const skip = (page - 1) * limit;
+  const where = { status: InvoiceStatus.UNPAID, dueDate: { $lt: new Date() } };
+
+  const [invoices, total] = await Promise.all([
+    Invoice.find(where)
+      .populate(invoicePopulate as any)
+      .sort({ dueDate: 1 })
+      .skip(skip)
+      .limit(limit),
+    Invoice.countDocuments(where),
+  ]);
+
+  return { invoices, pagination: { page, limit, total, pages: Math.ceil(total / limit) } };
+};
+
+export const getInvoiceStats = async () => {
+  const [totalInvoices, paidInvoices, unpaidInvoices, overdueInvoices, revenueResults] =
+    await Promise.all([
+      Invoice.countDocuments(),
+      Invoice.countDocuments({ status: InvoiceStatus.PAID }),
+      Invoice.countDocuments({ status: InvoiceStatus.UNPAID }),
+      Invoice.countDocuments({ status: InvoiceStatus.UNPAID, dueDate: { $lt: new Date() } }),
+      Invoice.aggregate([
+        {
+          $group: {
+            _id: '$status',
+            total: { $sum: '$totalAmount' },
+          },
+        },
+      ]),
+    ]);
+
+  const totalRevenue = revenueResults.find((r: any) => r._id === 'PAID')?.total ?? 0;
+  const unpaidAmount = revenueResults.find((r: any) => r._id === 'UNPAID')?.total ?? 0;
+
+  const twelveMonthsAgo = new Date(new Date().getFullYear(), new Date().getMonth() - 11, 1);
+  const monthlyRevenue = await Invoice.aggregate([
+    { $match: { status: 'PAID', issuedAt: { $gte: twelveMonthsAgo } } },
+    {
+      $group: {
+        _id: { year: { $year: '$issuedAt' }, month: { $month: '$issuedAt' } },
+        totalAmount: { $sum: '$totalAmount' },
+        count: { $sum: 1 },
+      },
+    },
+    { $sort: { '_id.year': 1, '_id.month': 1 } },
+  ]);
+
+  return { totalInvoices, paidInvoices, unpaidInvoices, overdueInvoices, totalRevenue, unpaidAmount, monthlyRevenue };
+};
+
+export const markInvoiceAsPaid = async (invoiceId: string) => {
+  return Invoice.findByIdAndUpdate(invoiceId, { status: 'PAID' }, { new: true }).populate(
+    invoicePopulate as any,
+  );
+};

@@ -1,0 +1,20 @@
+import { Router } from 'express';
+
+import {
+  changePasswordController,
+  createPinController,
+  changePinController,
+  enableBiometricsController,
+} from '../controllers/userSecurity.controller';
+import { authMiddleware } from '../middlewares/auth.middleware';
+
+const router = Router();
+
+router.use(authMiddleware);
+
+router.post('/change-password', changePasswordController);
+router.post('/create-pin', createPinController);
+router.patch('/change-pin', changePinController);
+router.patch('/biometrics', enableBiometricsController);
+
+export default router;

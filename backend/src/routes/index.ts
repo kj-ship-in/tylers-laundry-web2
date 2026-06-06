@@ -1,0 +1,15 @@
+export { default as authRoutes } from './auth.route';
+export { default as userSecurityRoutes } from './user.security.route';
+export { default as userRoutes } from './user.route';
+export { default as bookingRoutes } from './booking.route';
+export { default as paymentRoutes } from './payment.route';
+export { default as invoiceRoutes } from './invoice.route';
+export { default as serviceRoutes } from './service.route';
+export { default as receiptRoutes } from './receipt.route';
+export { default as adminRoutes } from './admin.route';
+export { dashboardRoutes } from './admin.dashboard.route';
+export { customerDashboardRoutes } from './customer.dashboard.route';
+export { staffDashboardRoutes } from './staff.dashboard.route';
+export { default as testimonialRoutes } from './testimonial.route';
+export { default as reportingRoutes } from './reporting.route';
+export { default as roleRoutes } from './role.route';
