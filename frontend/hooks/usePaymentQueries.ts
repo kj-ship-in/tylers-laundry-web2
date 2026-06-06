@@ -17,7 +17,6 @@ import {
   getReceiptsByInvoiceId,
   updatePaymentStatus,
 } from '@/services/payment';
-import type { ApiResponse, PaginationParams } from '@/types/user';
 import type {
   PaymentResponse,
   CreatePaymentRequest,
@@ -49,7 +48,7 @@ export const usePayments = (params: PaymentQueryParams = {}) => {
 /**
  * Hook to get a single payment by ID
  */
-export const usePayment = (paymentId: number) => {
+export const usePayment = (paymentId: string) => {
   return useQuery({
     queryKey: ['payment', paymentId],
     queryFn: () => getPaymentById(paymentId),
@@ -60,7 +59,7 @@ export const usePayment = (paymentId: number) => {
 /**
  * Hook to get payments by booking ID
  */
-export const usePaymentsByBookingId = (bookingId: number) => {
+export const usePaymentsByBookingId = (bookingId: string) => {
   return useQuery({
     queryKey: ['payments', 'booking', bookingId],
     queryFn: () => getPaymentsByBookingId(bookingId),
@@ -93,7 +92,7 @@ export const useUpdatePaymentMutation = (
   options?: UseMutationOptions<
     PaymentResponse,
     unknown,
-    { paymentId: number; data: UpdatePaymentRequest },
+    { paymentId: string; data: UpdatePaymentRequest },
     unknown
   >,
 ) => {
@@ -103,7 +102,7 @@ export const useUpdatePaymentMutation = (
       paymentId,
       data,
     }: {
-      paymentId: number;
+      paymentId: string;
       data: UpdatePaymentRequest;
     }) => {
       return updatePayment(paymentId, data);
@@ -116,7 +115,7 @@ export const useUpdatePaymentMutation = (
  * Mutation hook to delete a payment
  */
 export const useDeletePaymentMutation = (
-  options?: UseMutationOptions<{ message: string }, unknown, number, unknown>,
+  options?: UseMutationOptions<{ message: string }, unknown, string, unknown>,
 ) => {
   return useMutation({
     mutationKey: ['delete-payment'],
@@ -129,7 +128,7 @@ export const useDeletePaymentMutation = (
  * Mutation hook to process a payment
  */
 export const useProcessPaymentMutation = (
-  options?: UseMutationOptions<PaymentResponse, unknown, number, unknown>,
+  options?: UseMutationOptions<PaymentResponse, unknown, string, unknown>,
 ) => {
   return useMutation({
     mutationKey: ['process-payment'],
@@ -139,10 +138,10 @@ export const useProcessPaymentMutation = (
 };
 
 /**
- * Mutation hook to process a payment
+ * Mutation hook to update payment status
  */
 export const useUpdatePaymentStatusMutation = (
-  options?: UseMutationOptions<PaymentResponse, unknown, number, unknown>,
+  options?: UseMutationOptions<PaymentResponse, unknown, string, unknown>,
 ) => {
   return useMutation({
     mutationKey: ['update-payment-status'],
@@ -158,7 +157,7 @@ export const useRefundPaymentMutation = (
   options?: UseMutationOptions<
     PaymentResponse,
     unknown,
-    { paymentId: number; reason?: string },
+    { paymentId: string; reason?: string },
     unknown
   >,
 ) => {
@@ -168,7 +167,7 @@ export const useRefundPaymentMutation = (
       paymentId,
       reason,
     }: {
-      paymentId: number;
+      paymentId: string;
       reason?: string;
     }) => {
       return refundPayment(paymentId, reason);
@@ -180,7 +179,7 @@ export const useRefundPaymentMutation = (
 /**
  * Hook to get a single invoice by ID
  */
-export const useInvoice = (invoiceId: number) => {
+export const useInvoice = (invoiceId: string) => {
   return useQuery({
     queryKey: ['invoice', invoiceId],
     queryFn: () => getInvoiceById(invoiceId),
@@ -191,7 +190,7 @@ export const useInvoice = (invoiceId: number) => {
 /**
  * Hook to get invoices by payment ID
  */
-export const useInvoicesByPaymentId = (paymentId: number) => {
+export const useInvoicesByPaymentId = (paymentId: string) => {
   return useQuery({
     queryKey: ['invoices', 'payment', paymentId],
     queryFn: () => getInvoicesByPaymentId(paymentId),
@@ -224,7 +223,7 @@ export const useUpdateInvoiceMutation = (
   options?: UseMutationOptions<
     InvoiceResponse,
     unknown,
-    { invoiceId: number; data: UpdateInvoiceRequest },
+    { invoiceId: string; data: UpdateInvoiceRequest },
     unknown
   >,
 ) => {
@@ -234,7 +233,7 @@ export const useUpdateInvoiceMutation = (
       invoiceId,
       data,
     }: {
-      invoiceId: number;
+      invoiceId: string;
       data: UpdateInvoiceRequest;
     }) => {
       return updateInvoice(invoiceId, data);
@@ -246,7 +245,7 @@ export const useUpdateInvoiceMutation = (
 /**
  * Hook to get a single receipt by ID
  */
-export const useReceipt = (receiptId: number) => {
+export const useReceipt = (receiptId: string) => {
   return useQuery({
     queryKey: ['receipt', receiptId],
     queryFn: () => getReceiptById(receiptId),
@@ -257,7 +256,7 @@ export const useReceipt = (receiptId: number) => {
 /**
  * Hook to get receipts by invoice ID
  */
-export const useReceiptsByInvoiceId = (invoiceId: number) => {
+export const useReceiptsByInvoiceId = (invoiceId: string) => {
   return useQuery({
     queryKey: ['receipts', 'invoice', invoiceId],
     queryFn: () => getReceiptsByInvoiceId(invoiceId),
@@ -290,7 +289,7 @@ export const useUpdateReceiptMutation = (
   options?: UseMutationOptions<
     ReceiptResponse,
     unknown,
-    { receiptId: number; data: UpdateReceiptRequest },
+    { receiptId: string; data: UpdateReceiptRequest },
     unknown
   >,
 ) => {
@@ -300,7 +299,7 @@ export const useUpdateReceiptMutation = (
       receiptId,
       data,
     }: {
-      receiptId: number;
+      receiptId: string;
       data: UpdateReceiptRequest;
     }) => {
       return updateReceipt(receiptId, data);

@@ -36,7 +36,7 @@ export const getAllReceipts = async (
 /**
  * Get a single receipt by ID
  */
-export const getReceiptById = async (receiptId: number): Promise<Receipt> => {
+export const getReceiptById = async (receiptId: string): Promise<Receipt> => {
   const response = await apiClient.get<Receipt>(`/receipts/get/${receiptId}`);
   return response.data;
 };
@@ -70,7 +70,7 @@ export const deleteReceipt = async (
 /**
  * Generate PDF for a receipt
  */
-export const generateReceiptPDF = async (receiptId: number): Promise<Blob> => {
+export const generateReceiptPDF = async (receiptId: string): Promise<Blob> => {
   const response = await apiClient.get(`/receipts/pdf/${receiptId}`, {
     responseType: 'blob',
   });

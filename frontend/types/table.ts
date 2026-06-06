@@ -16,6 +16,7 @@ export interface Column<T = any> {
   filterable?: boolean;
   width?: string;
   align?: 'left' | 'center' | 'right';
+  className?: string;
   render?: (value: any, row?: T, index?: number) => ReactNode;
   actions?: TableAction<T>[];
 }

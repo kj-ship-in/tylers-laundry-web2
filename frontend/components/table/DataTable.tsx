@@ -2,8 +2,6 @@
 
 import { useState, useMemo, useCallback } from 'react';
 
-import Link from 'next/link';
-
 import { Search, X, ChevronUp, ChevronDown, ArrowUpDown } from 'lucide-react';
 
 import { Button } from '../ui/button';
@@ -20,7 +18,6 @@ import { Skeleton } from '../ui/skeleton';
 
 import TablePagination from './TablePagination';
 import type { DataTableProps, SortConfig } from '@/types/table';
-import LoadingSpinnerSmall from '../loadings/loading-spinner-small';
 
 const DataTable = <T extends Record<string, any>>({
   columns,
@@ -194,7 +191,7 @@ const DataTable = <T extends Record<string, any>>({
             stickyHeader ? 'max-h-96 overflow-auto' : 'overflow-x-auto'
           }
         >
-          <Table className='w-full'>
+          <Table className='min-w-full'>
             <TableHeader
               className={`bg-gray-50 ${stickyHeader ? 'sticky top-0 z-10' : ''}`}
             >
@@ -202,7 +199,7 @@ const DataTable = <T extends Record<string, any>>({
                 {columns.map((column, colIdx) => (
                   <TableHead
                     key={`col-${String(column.key) || column.title}-${colIdx}`}
-                    className={`px-4 py-3 text-left ${compact ? 'px-2 py-2' : ''}`}
+                    className={`px-4 py-3 text-left whitespace-nowrap ${compact ? 'px-2 py-2' : ''} ${column.className ?? ''}`}
                     style={{ width: column.width }}
                   >
                     <div
@@ -252,7 +249,7 @@ const DataTable = <T extends Record<string, any>>({
                     {columns.map((_, colIdx) => (
                       <TableCell
                         key={`skeleton-cell-${rowIdx}-${colIdx}`}
-                        className={`px-4 py-3 ${compact ? 'px-2 py-2' : ''}`}
+                        className={`px-4 py-3 ${compact ? 'px-2 py-2' : ''} ${columns[colIdx]?.className ?? ''}`}
                       >
                         <Skeleton className='h-6 w-full' />
                       </TableCell>
@@ -286,7 +283,7 @@ const DataTable = <T extends Record<string, any>>({
                             : column.align === 'right'
                               ? 'text-right'
                               : ''
-                        }`}
+                        } ${column.className ?? ''}`}
                       >
                         {column.render
                           ? column.render(row[column.key!], row, rowIndex)

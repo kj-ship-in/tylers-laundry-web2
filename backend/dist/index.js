@@ -1,8 +1,13 @@
 import app from './app';
 import { env } from './config/env';
+import { connectDB } from './lib/mongoose';
 import CronJobService from './services/cron.service';
 import logger from './utils/logger';
 const PORT = env.PORT ?? 3000;
+connectDB().catch(err => {
+    logger.error('Failed to connect to MongoDB:', err);
+    process.exit(1);
+});
 const server = app.listen(PORT, () => {
     logger.info(`🚀 Server running on http://localhost:${PORT}`);
     // Initialize cron jobs only in production or when explicitly enabled

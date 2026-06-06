@@ -1,7 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import ExcelJS from 'exceljs';
-import prisma from '../lib/prisma';
-import { BookingStatus, PaymentStatus } from '../prisma/generated/prisma';
+import { Booking } from '../models/booking.model';
+import { Invoice } from '../models/invoice.model';
+import { Payment } from '../models/payment.model';
+import { Role } from '../models/role.model';
+import { Service } from '../models/service.model';
+import { User } from '../models/user.model';
+import { BookingStatus, InvoiceStatus, PaymentStatus } from '../types/enums';
 import ExcelReportGenerator from '../utils/excel-generator';
 const ReportingService = {
     async generateFinancialReport(filters) {
@@ -9,205 +14,103 @@ const ReportingService = {
         const start = new Date(startDate);
         const end = new Date(endDate);
         const [payments, invoices, revenueByService] = await Promise.all([
-            prisma.payment.findMany({
-                where: {
-                    createdAt: {
-                        gte: start,
-                        lte: end,
-                    },
-                    status: 'PAID',
-                },
-                include: {
-                    booking: {
-                        include: {
-                            user: true,
-                            service: true,
-                        },
-                    },
-                },
-                orderBy: { createdAt: 'desc' },
+            Payment.find({ createdAt: { $gte: start, $lte: end }, status: PaymentStatus.PAID }).populate({
+                path: 'bookingId',
+                populate: [{ path: 'userId' }, { path: 'serviceId' }],
             }),
-            prisma.invoice.findMany({
-                where: {
-                    issuedAt: {
-                        gte: start,
-                        lte: end,
-                    },
-                },
-                include: {
-                    payment: {
-                        include: {
-                            booking: {
-                                include: {
-                                    user: true,
-                                    service: true,
-                                },
-                            },
-                        },
-                    },
-                },
+            Invoice.find({ issuedAt: { $gte: start, $lte: end } }).populate({
+                path: 'paymentId',
+                populate: { path: 'bookingId', populate: [{ path: 'userId' }, { path: 'serviceId' }] },
             }),
-            prisma.booking.groupBy({
-                by: ['serviceId'],
-                _sum: { totalAmount: true },
-                _count: { id: true },
-                where: {
-                    createdAt: {
-                        gte: start,
-                        lte: end,
-                    },
-                    status: 'COMPLETED',
-                },
-                orderBy: { _sum: { totalAmount: 'desc' } },
-            }),
+            Booking.aggregate([
+                { $match: { createdAt: { $gte: start, $lte: end }, status: BookingStatus.COMPLETED } },
+                { $group: { _id: '$serviceId', totalAmount: { $sum: '$totalAmount' }, count: { $sum: 1 } } },
+                { $sort: { totalAmount: -1 } },
+            ]),
         ]);
-        const services = await prisma.service.findMany();
-        const revenueByServiceWithDetails = revenueByService.map(revenue => {
-            const service = services.find(s => s.id === revenue.serviceId);
+        const services = await Service.find();
+        const revenueByServiceWithDetails = revenueByService.map((revenue) => {
+            const service = services.find(s => s._id.toString() === revenue._id.toString());
             return {
                 type: service?.type ?? 'Unknown',
-                totalRevenue: revenue._sum.totalAmount ?? 0,
-                orderCount: revenue._count.id,
-                averagePrice: Number(revenue._sum.totalAmount ?? 0) / revenue._count.id,
+                totalRevenue: revenue.totalAmount ?? 0,
+                orderCount: revenue.count,
+                averagePrice: revenue.count > 0 ? revenue.totalAmount / revenue.count : 0,
             };
         });
         const summary = {
-            totalRevenue: payments.reduce((sum, payment) => sum + Number(payment.amount), 0),
+            totalRevenue: payments.reduce((sum, p) => sum + Number(p.amount), 0),
             totalPayments: payments.length,
             averageOrderValue: payments.length > 0
-                ? payments.reduce((sum, payment) => sum + Number(payment.amount), 0) /
-                    payments.length
+                ? payments.reduce((sum, p) => sum + Number(p.amount), 0) / payments.length
                 : 0,
             paidInvoices: invoices.filter(inv => inv.status === 'PAID').length,
             unpaidInvoices: invoices.filter(inv => inv.status === 'UNPAID').length,
             totalTax: invoices.reduce((sum, inv) => sum + Number(inv.tax), 0),
             totalDiscounts: invoices.reduce((sum, inv) => sum + Number(inv.discount), 0),
         };
-        const reportData = {
-            summary,
-            payments,
-            revenueByService: revenueByServiceWithDetails,
-        };
+        const reportData = { summary, payments, revenueByService: revenueByServiceWithDetails };
         if (filters.format === 'excel') {
             const excelBuffer = await ExcelReportGenerator.generateFinancialReport(reportData);
             const filename = `financial-report-${Date.now()}.xlsx`;
             const filepath = await ExcelReportGenerator.saveExcelToFile(excelBuffer, filename);
-            return {
-                buffer: excelBuffer,
-                filepath,
-                filename,
-                format: 'excel',
-            };
+            return { buffer: excelBuffer, filepath, filename, format: 'excel' };
         }
-        return {
-            data: reportData,
-            format: 'json',
-        };
+        return { data: reportData, format: 'json' };
     },
     async generateCustomerReport(filters) {
         const where = {};
-        if (filters.status) {
+        if (filters.status)
             where.isActive = filters.status === 'active';
-        }
         if (filters.startDate && filters.endDate) {
-            where.createdAt = {
-                gte: new Date(filters.startDate),
-                lte: new Date(filters.endDate),
-            };
+            where.createdAt = { $gte: new Date(filters.startDate), $lte: new Date(filters.endDate) };
         }
-        const customers = await prisma.user.findMany({
-            where,
-            include: {
-                bookings: {
-                    include: {
-                        payments: true,
-                    },
-                },
-                _count: {
-                    select: {
-                        bookings: true,
-                    },
-                },
-            },
-            orderBy: { createdAt: 'desc' },
-        });
-        const customersWithStats = customers.map(customer => ({
-            ...customer,
-            totalSpent: customer.bookings
-                .flatMap(booking => booking.payments)
-                .reduce((sum, payment) => sum + Number(payment.amount), 0),
-            lastBookingDate: customer.bookings.length > 0
-                ? Math.max(...customer.bookings.map(b => new Date(b.date).getTime()))
-                : null,
+        const customers = await User.find(where).sort({ createdAt: -1 });
+        const customersWithStats = await Promise.all(customers.map(async (customer) => {
+            const bookings = await Booking.find({ userId: customer._id });
+            const bookingIds = bookings.map(b => b._id);
+            const payments = await Payment.find({ bookingId: { $in: bookingIds } });
+            const totalSpent = payments.reduce((sum, p) => sum + Number(p.amount), 0);
+            return {
+                ...customer.toObject(),
+                bookings,
+                totalSpent,
+                lastBookingDate: bookings.length > 0
+                    ? Math.max(...bookings.map(b => new Date(b.date).getTime()))
+                    : null,
+            };
         }));
         if (filters.format === 'excel') {
             const excelBuffer = await ExcelReportGenerator.generateCustomerReport(customersWithStats, filters);
             const filename = `customer-report-${Date.now()}.xlsx`;
             const filepath = await ExcelReportGenerator.saveExcelToFile(excelBuffer, filename);
-            return {
-                buffer: excelBuffer,
-                filepath,
-                filename,
-                format: 'excel',
-            };
+            return { buffer: excelBuffer, filepath, filename, format: 'excel' };
         }
-        return {
-            data: customersWithStats,
-            format: 'json',
-        };
+        return { data: customersWithStats, format: 'json' };
     },
     async generateServicePerformanceReport(filters) {
         const { startDate, endDate } = filters;
-        const serviceStats = await prisma.service.findMany({
-            include: {
-                bookings: {
-                    where: {
-                        createdAt: {
-                            gte: new Date(startDate),
-                            lte: new Date(endDate),
-                        },
-                    },
-                    include: {
-                        payments: true,
-                    },
-                },
-                _count: {
-                    select: {
-                        bookings: {
-                            where: {
-                                createdAt: {
-                                    gte: new Date(startDate),
-                                    lte: new Date(endDate),
-                                },
-                            },
-                        },
-                    },
-                },
-            },
-        });
-        const reportData = serviceStats.map(service => ({
-            serviceName: service.type,
-            description: service.description,
-            basePrice: service.price,
-            totalBookings: service._count.bookings,
-            totalRevenue: service.bookings
-                .flatMap(booking => booking.payments)
-                .reduce((sum, payment) => sum + Number(payment.amount), 0),
-            averageRevenue: service._count.bookings > 0
-                ? service.bookings
-                    .flatMap(booking => booking.payments)
-                    .reduce((sum, payment) => sum + Number(payment.amount), 0) /
-                    service._count.bookings
-                : 0,
-            completedBookings: service.bookings.filter(b => b.status === 'COMPLETED')
-                .length,
-            cancelledBookings: service.bookings.filter(b => b.status === 'CANCELLED')
-                .length,
-            conversionRate: service._count.bookings > 0
-                ? (service.bookings.filter(b => b.status === 'COMPLETED').length /
-                    service._count.bookings) *
-                    100
-                : 0,
+        const serviceStats = await Service.find();
+        const reportData = await Promise.all(serviceStats.map(async (service) => {
+            const bookings = await Booking.find({
+                serviceId: service._id,
+                createdAt: { $gte: new Date(startDate), $lte: new Date(endDate) },
+            });
+            const bookingIds = bookings.map(b => b._id);
+            const payments = await Payment.find({ bookingId: { $in: bookingIds } });
+            const totalRevenue = payments.reduce((sum, p) => sum + Number(p.amount), 0);
+            const completedCount = bookings.filter(b => b.status === 'COMPLETED').length;
+            return {
+                serviceName: service.type,
+                description: service.description,
+                basePrice: service.price,
+                totalBookings: bookings.length,
+                totalRevenue,
+                averageRevenue: bookings.length > 0 ? totalRevenue / bookings.length : 0,
+                completedBookings: completedCount,
+                cancelledBookings: bookings.filter(b => b.status === 'CANCELLED').length,
+                conversionRate: bookings.length > 0 ? (completedCount / bookings.length) * 100 : 0,
+            };
         }));
         if (filters.format === 'excel') {
             const workbook = new ExcelJS.Workbook();
@@ -223,89 +126,44 @@ const ReportingService = {
                 { header: 'Cancelled', key: 'cancelledBookings', width: 12 },
                 { header: 'Conversion Rate %', key: 'conversionRate', width: 15 },
             ];
-            reportData.forEach(service => {
-                worksheet.addRow(service);
-            });
+            reportData.forEach(s => worksheet.addRow(s));
             const excelBuffer = await workbook.xlsx.writeBuffer();
             const filename = `service-performance-${Date.now()}.xlsx`;
             const filepath = await ExcelReportGenerator.saveExcelToFile(excelBuffer, filename);
-            return {
-                buffer: excelBuffer,
-                filepath,
-                filename,
-                format: 'excel',
-            };
+            return { buffer: excelBuffer, filepath, filename, format: 'excel' };
         }
-        return {
-            data: reportData,
-            format: 'json',
-        };
+        return { data: reportData, format: 'json' };
     },
     async getDashboardStats() {
         const today = new Date();
         const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
         const startOfYear = new Date(today.getFullYear(), 0, 1);
+        const userRole = await Role.findOne({ name: 'USER' });
         const [totalCustomers, totalBookings, activeBookings, pendingPayments, monthlyRevenue, yearlyRevenue, pendingBookings, completedBookings, unpaidInvoices, recentPayments,] = await Promise.all([
-            prisma.user.count({ where: { role: { name: 'USER' }, isActive: true } }),
-            prisma.booking.count({
-                where: {
-                    status: {
-                        in: [BookingStatus.PENDING, BookingStatus.IN_PROGRESS],
-                    },
-                },
-            }),
-            prisma.payment.count({
-                where: { status: PaymentStatus.PENDING },
-            }),
-            prisma.booking.count(),
-            prisma.payment.aggregate({
-                _sum: { amount: true },
-                where: {
-                    status: 'PAID',
-                    createdAt: { gte: startOfMonth },
-                },
-            }),
-            prisma.payment.aggregate({
-                _sum: { amount: true },
-                where: {
-                    status: 'PAID',
-                    createdAt: { gte: startOfYear },
-                },
-            }),
-            prisma.booking.count({ where: { status: 'PENDING' } }),
-            prisma.booking.count({ where: { status: 'COMPLETED' } }),
-            prisma.invoice.count({ where: { status: 'UNPAID' } }),
-            prisma.payment.findMany({
-                take: 10,
-                orderBy: { createdAt: 'desc' },
-                select: {
-                    id: true,
-                    amount: true,
-                    status: true,
-                    method: true,
-                    currency: true,
-                    createdAt: true,
-                    booking: {
-                        select: {
-                            id: true,
-                            totalAmount: true,
-                            user: {
-                                select: {
-                                    id: true,
-                                    name: true,
-                                    email: true,
-                                },
-                            },
-                            service: {
-                                select: {
-                                    id: true,
-                                    title: true,
-                                    type: true,
-                                },
-                            },
-                        },
-                    },
-                },
+            userRole ? User.countDocuments({ roleId: userRole._id, isActive: true }) : 0,
+            Booking.countDocuments({ status: { $in: [BookingStatus.PENDING, BookingStatus.IN_PROGRESS] } }),
+            Payment.countDocuments({ status: PaymentStatus.PENDING }),
+            Booking.countDocuments(),
+            Payment.aggregate([
+                { $match: { status: PaymentStatus.PAID, createdAt: { $gte: startOfMonth } } },
+                { $group: { _id: null, total: { $sum: '$amount' } } },
+            ]),
+            Payment.aggregate([
+                { $match: { status: PaymentStatus.PAID, createdAt: { $gte: startOfYear } } },
+                { $group: { _id: null, total: { $sum: '$amount' } } },
+            ]),
+            Booking.countDocuments({ status: BookingStatus.PENDING }),
+            Booking.countDocuments({ status: BookingStatus.COMPLETED }),
+            Invoice.countDocuments({ status: InvoiceStatus.UNPAID }),
+            Payment.find()
+                .sort({ createdAt: -1 })
+                .limit(10)
+                .populate({
+                path: 'bookingId',
+                populate: [
+                    { path: 'userId', select: 'id name email' },
+                    { path: 'serviceId', select: 'id title type' },
+                ],
             }),
         ]);
         return {
@@ -313,8 +171,8 @@ const ReportingService = {
             totalBookings,
             activeBookings,
             pendingPayments,
-            monthlyRevenue: monthlyRevenue._sum.amount ?? 0,
-            yearlyRevenue: yearlyRevenue._sum.amount ?? 0,
+            monthlyRevenue: monthlyRevenue[0]?.total ?? 0,
+            yearlyRevenue: yearlyRevenue[0]?.total ?? 0,
             pendingBookings,
             completedBookings,
             unpaidInvoices,
@@ -324,64 +182,56 @@ const ReportingService = {
     async getMonthlyTrends() {
         const oneYearAgo = new Date();
         oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
-        const monthlyData = await prisma.payment.groupBy({
-            by: ['createdAt'],
-            _sum: { amount: true },
-            _count: { id: true },
-            where: {
-                status: 'PAID',
-                createdAt: { gte: oneYearAgo },
+        const monthlyData = await Payment.aggregate([
+            { $match: { status: PaymentStatus.PAID, createdAt: { $gte: oneYearAgo } } },
+            {
+                $group: {
+                    _id: { year: { $year: '$createdAt' }, month: { $month: '$createdAt' } },
+                    totalAmount: { $sum: '$amount' },
+                    count: { $sum: 1 },
+                },
             },
-            orderBy: { createdAt: 'asc' },
-        });
-        const monthlyRevenue = Array.from({ length: 12 }, (_, index) => {
+            { $sort: { '_id.year': 1, '_id.month': 1 } },
+        ]);
+        return Array.from({ length: 12 }, (_, index) => {
             const month = new Date();
             month.setMonth(month.getMonth() - (11 - index));
-            const monthData = monthlyData.filter(data => {
-                const dataMonth = new Date(data.createdAt);
-                return (dataMonth.getMonth() === month.getMonth() &&
-                    dataMonth.getFullYear() === month.getFullYear());
-            });
+            const found = monthlyData.find((d) => d._id.year === month.getFullYear() && d._id.month === month.getMonth() + 1);
             return {
-                month: month.toLocaleDateString('en-US', {
-                    month: 'short',
-                    year: 'numeric',
-                }),
-                revenue: monthData.reduce((sum, data) => sum + Number(data._sum.amount ?? 0), 0),
-                bookings: monthData.reduce((sum, data) => sum + data._count.id, 0),
+                month: month.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+                revenue: found?.totalAmount ?? 0,
+                bookings: found?.count ?? 0,
             };
         });
-        return monthlyRevenue;
     },
     async getRevenueLineChartData(days = 30) {
         const startDate = new Date();
         startDate.setDate(startDate.getDate() - days);
-        const dailyRevenue = await prisma.payment.groupBy({
-            by: ['createdAt'],
-            _sum: { amount: true },
-            _count: { id: true },
-            where: {
-                status: 'PAID',
-                createdAt: { gte: startDate },
+        const dailyRevenue = await Payment.aggregate([
+            { $match: { status: PaymentStatus.PAID, createdAt: { $gte: startDate } } },
+            {
+                $group: {
+                    _id: {
+                        year: { $year: '$createdAt' },
+                        month: { $month: '$createdAt' },
+                        day: { $dayOfMonth: '$createdAt' },
+                    },
+                    totalAmount: { $sum: '$amount' },
+                    count: { $sum: 1 },
+                },
             },
-            orderBy: { createdAt: 'asc' },
-        });
+        ]);
         const chartData = Array.from({ length: days }, (_, index) => {
             const date = new Date();
             date.setDate(date.getDate() - (days - 1 - index));
             date.setHours(0, 0, 0, 0);
-            const dayData = dailyRevenue.filter(data => {
-                const dataDate = new Date(data.createdAt);
-                dataDate.setHours(0, 0, 0, 0);
-                return dataDate.getTime() === date.getTime();
-            });
+            const found = dailyRevenue.find((d) => d._id.year === date.getFullYear() &&
+                d._id.month === date.getMonth() + 1 &&
+                d._id.day === date.getDate());
             return {
-                date: date.toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                }),
-                revenue: dayData.reduce((sum, data) => sum + Number(data._sum.amount ?? 0), 0),
-                bookings: dayData.reduce((sum, data) => sum + data._count.id, 0),
+                date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                revenue: found?.totalAmount ?? 0,
+                bookings: found?.count ?? 0,
             };
         });
         return {
@@ -407,10 +257,9 @@ const ReportingService = {
         };
     },
     async getBookingStatusBarChartData() {
-        const bookingsByStatus = await prisma.booking.groupBy({
-            by: ['status'],
-            _count: { id: true },
-        });
+        const bookingsByStatus = await Booking.aggregate([
+            { $group: { _id: '$status', count: { $sum: 1 } } },
+        ]);
         const statusLabels = {
             PENDING: 'Pending',
             IN_PROGRESS: 'In Progress',
@@ -425,10 +274,10 @@ const ReportingService = {
             DELIVERED: '#8BC34A',
             CANCELLED: '#F44336',
         };
-        const data = bookingsByStatus.map(item => ({
-            status: statusLabels[item.status] ?? item.status,
-            count: item._count.id,
-            color: statusColors[item.status] ?? '#999999',
+        const data = bookingsByStatus.map((item) => ({
+            status: statusLabels[item._id] ?? item._id,
+            count: item.count,
+            color: statusColors[item._id] ?? '#999999',
         }));
         return {
             labels: data.map(d => d.status),
@@ -446,42 +295,28 @@ const ReportingService = {
     async getServiceRevenueDonutData() {
         const today = new Date();
         const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-        const serviceRevenue = await prisma.booking.groupBy({
-            by: ['serviceId'],
-            _sum: { totalAmount: true },
-            _count: { id: true },
-            where: {
-                status: 'COMPLETED',
-                createdAt: { gte: startOfMonth },
-            },
-        });
-        const services = await prisma.service.findMany();
+        const serviceRevenue = await Booking.aggregate([
+            { $match: { status: BookingStatus.COMPLETED, createdAt: { $gte: startOfMonth } } },
+            { $group: { _id: '$serviceId', totalAmount: { $sum: '$totalAmount' }, count: { $sum: 1 } } },
+        ]);
+        const services = await Service.find();
         const donutData = serviceRevenue
-            .map(item => {
-            const service = services.find(s => s.id === item.serviceId);
+            .map((item) => {
+            const service = services.find(s => s._id.toString() === item._id.toString());
             return {
                 serviceName: service?.title ?? 'Unknown',
-                revenue: Number(item._sum.totalAmount ?? 0),
-                bookings: item._count.id,
+                revenue: Number(item.totalAmount ?? 0),
+                bookings: item.count,
             };
         })
             .sort((a, b) => b.revenue - a.revenue);
-        const colors = [
-            '#FF6384',
-            '#36A2EB',
-            '#FFCE56',
-            '#4BC0C0',
-            '#9966FF',
-            '#FF9F40',
-            '#C9CBCF',
-            '#4CAF50',
-        ];
+        const colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#C9CBCF', '#4CAF50'];
         return {
-            labels: donutData.map(d => d.serviceName),
+            labels: donutData.map((d) => d.serviceName),
             datasets: [
                 {
                     label: 'Revenue by Service (GMD)',
-                    data: donutData.map(d => d.revenue),
+                    data: donutData.map((d) => d.revenue),
                     backgroundColor: colors.slice(0, donutData.length),
                     borderColor: colors.slice(0, donutData.length),
                     borderWidth: 2,
@@ -491,19 +326,15 @@ const ReportingService = {
         };
     },
     async getPaymentMethodDonutData() {
-        const paymentMethods = await prisma.payment.groupBy({
-            by: ['method'],
-            _sum: { amount: true },
-            _count: { id: true },
-            where: {
-                status: 'PAID',
-            },
-        });
+        const paymentMethods = await Payment.aggregate([
+            { $match: { status: PaymentStatus.PAID } },
+            { $group: { _id: '$method', totalAmount: { $sum: '$amount' }, count: { $sum: 1 } } },
+        ]);
         const colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'];
         const data = paymentMethods.map((item, index) => ({
-            method: item.method ?? 'Unknown',
-            amount: Number(item._sum.amount ?? 0),
-            count: item._count.id,
+            method: item._id ?? 'Unknown',
+            amount: Number(item.totalAmount ?? 0),
+            count: item.count,
             color: colors[index % colors.length],
         }));
         return {
@@ -523,29 +354,18 @@ const ReportingService = {
     async getDailyBookingComparisonData(days = 30) {
         const startDate = new Date();
         startDate.setDate(startDate.getDate() - days);
-        const bookingsByStatusAndDate = await prisma.booking.findMany({
-            where: {
-                createdAt: { gte: startDate },
-            },
-            select: {
-                createdAt: true,
-                status: true,
-            },
-        });
+        const bookings = await Booking.find({ createdAt: { $gte: startDate } }).select('createdAt status');
         const chartData = Array.from({ length: days }, (_, index) => {
             const date = new Date();
             date.setDate(date.getDate() - (days - 1 - index));
             date.setHours(0, 0, 0, 0);
-            const dayBookings = bookingsByStatusAndDate.filter(booking => {
-                const bookingDate = new Date(booking.createdAt);
-                bookingDate.setHours(0, 0, 0, 0);
-                return bookingDate.getTime() === date.getTime();
+            const dayBookings = bookings.filter(b => {
+                const d = new Date(b.createdAt);
+                d.setHours(0, 0, 0, 0);
+                return d.getTime() === date.getTime();
             });
             return {
-                date: date.toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                }),
+                date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
                 pending: dayBookings.filter(b => b.status === 'PENDING').length,
                 inProgress: dayBookings.filter(b => b.status === 'IN_PROGRESS').length,
                 completed: dayBookings.filter(b => b.status === 'COMPLETED').length,
@@ -556,65 +376,35 @@ const ReportingService = {
         return {
             labels: chartData.map(d => d.date),
             datasets: [
-                {
-                    label: 'Pending',
-                    data: chartData.map(d => d.pending),
-                    backgroundColor: 'rgba(255, 193, 7, 0.7)',
-                    borderColor: '#FFC107',
-                },
-                {
-                    label: 'In Progress',
-                    data: chartData.map(d => d.inProgress),
-                    backgroundColor: 'rgba(33, 150, 243, 0.7)',
-                    borderColor: '#2196F3',
-                },
-                {
-                    label: 'Completed',
-                    data: chartData.map(d => d.completed),
-                    backgroundColor: 'rgba(76, 175, 80, 0.7)',
-                    borderColor: '#4CAF50',
-                },
-                {
-                    label: 'Delivered',
-                    data: chartData.map(d => d.delivered),
-                    backgroundColor: 'rgba(139, 195, 74, 0.7)',
-                    borderColor: '#8BC34A',
-                },
-                {
-                    label: 'Cancelled',
-                    data: chartData.map(d => d.cancelled),
-                    backgroundColor: 'rgba(244, 67, 54, 0.7)',
-                    borderColor: '#F44336',
-                },
+                { label: 'Pending', data: chartData.map(d => d.pending), backgroundColor: 'rgba(255, 193, 7, 0.7)', borderColor: '#FFC107' },
+                { label: 'In Progress', data: chartData.map(d => d.inProgress), backgroundColor: 'rgba(33, 150, 243, 0.7)', borderColor: '#2196F3' },
+                { label: 'Completed', data: chartData.map(d => d.completed), backgroundColor: 'rgba(76, 175, 80, 0.7)', borderColor: '#4CAF50' },
+                { label: 'Delivered', data: chartData.map(d => d.delivered), backgroundColor: 'rgba(139, 195, 74, 0.7)', borderColor: '#8BC34A' },
+                { label: 'Cancelled', data: chartData.map(d => d.cancelled), backgroundColor: 'rgba(244, 67, 54, 0.7)', borderColor: '#F44336' },
             ],
         };
     },
     async getCustomerAcquisitionLineData(months = 12) {
         const startDate = new Date();
         startDate.setMonth(startDate.getMonth() - months);
-        const customersByMonth = await prisma.user.groupBy({
-            by: ['createdAt'],
-            _count: { id: true },
-            where: {
-                role: { name: 'USER' },
-                createdAt: { gte: startDate },
+        const userRole = await Role.findOne({ name: 'USER' });
+        const customersByMonth = await User.aggregate([
+            { $match: { roleId: userRole?._id, createdAt: { $gte: startDate } } },
+            {
+                $group: {
+                    _id: { year: { $year: '$createdAt' }, month: { $month: '$createdAt' } },
+                    count: { $sum: 1 },
+                },
             },
-            orderBy: { createdAt: 'asc' },
-        });
+            { $sort: { '_id.year': 1, '_id.month': 1 } },
+        ]);
         const chartData = Array.from({ length: months }, (_, index) => {
             const month = new Date();
             month.setMonth(month.getMonth() - (months - 1 - index));
-            const monthData = customersByMonth.filter(data => {
-                const dataMonth = new Date(data.createdAt);
-                return (dataMonth.getMonth() === month.getMonth() &&
-                    dataMonth.getFullYear() === month.getFullYear());
-            });
+            const found = customersByMonth.find((d) => d._id.year === month.getFullYear() && d._id.month === month.getMonth() + 1);
             return {
-                month: month.toLocaleDateString('en-US', {
-                    month: 'short',
-                    year: '2-digit',
-                }),
-                customers: monthData.reduce((sum, data) => sum + (data._count?.id ?? 0), 0),
+                month: month.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
+                customers: found?.count ?? 0,
             };
         });
         return {
@@ -652,91 +442,35 @@ const ReportingService = {
         };
     },
     async getStaffPerformanceMetrics() {
-        const staffMembers = await prisma.user.findMany({
-            where: { role: { name: 'STAFF' }, isActive: true },
-            select: {
-                id: true,
-                name: true,
-                email: true,
-                createdAt: true,
-            },
-        });
-        const staffPerformance = await Promise.all(staffMembers.map(async (staff) => {
+        const staffRole = await Role.findOne({ name: 'STAFF' });
+        const staffMembers = await User.find({ roleId: staffRole?._id, isActive: true }).select('id name email createdAt');
+        return Promise.all(staffMembers.map(async (staff) => {
             const today = new Date();
             const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
             const startOfWeek = new Date(today);
             startOfWeek.setDate(today.getDate() - today.getDay());
-            // Get bookings handled by this staff (assuming staff are assigned to bookings)
-            // For now, we'll track all bookings since staff creation
-            const [totalBookings, completedBookings, pendingBookings, monthlyBookings, weeklyBookings, monthlyRevenue, weeklyRevenue, averageCompletionTime,] = await Promise.all([
-                prisma.booking.count({
-                    where: { createdAt: { gte: staff.createdAt } },
-                }),
-                prisma.booking.count({
-                    where: {
-                        status: 'COMPLETED',
-                        createdAt: { gte: staff.createdAt },
-                    },
-                }),
-                prisma.booking.count({
-                    where: {
-                        status: 'PENDING',
-                        createdAt: { gte: staff.createdAt },
-                    },
-                }),
-                prisma.booking.count({
-                    where: {
-                        createdAt: { gte: startOfMonth },
-                    },
-                }),
-                prisma.booking.count({
-                    where: {
-                        createdAt: { gte: startOfWeek },
-                    },
-                }),
-                prisma.payment.aggregate({
-                    _sum: { amount: true },
-                    where: {
-                        status: 'PAID',
-                        booking: {
-                            createdAt: { gte: startOfMonth },
-                        },
-                    },
-                }),
-                prisma.payment.aggregate({
-                    _sum: { amount: true },
-                    where: {
-                        status: 'PAID',
-                        booking: {
-                            createdAt: { gte: startOfWeek },
-                        },
-                    },
-                }),
-                // Calculate average time from booking creation to completion
-                prisma.booking.findMany({
-                    where: {
-                        status: 'COMPLETED',
-                        createdAt: { gte: staff.createdAt },
-                    },
-                    select: {
-                        createdAt: true,
-                        updatedAt: true,
-                    },
-                }),
+            const [totalBookings, completedBookings, pendingBookings, monthlyBookings, weeklyBookings, monthlyRevenue, weeklyRevenue, completionTimeDocs,] = await Promise.all([
+                Booking.countDocuments({ createdAt: { $gte: staff.createdAt } }),
+                Booking.countDocuments({ status: BookingStatus.COMPLETED, createdAt: { $gte: staff.createdAt } }),
+                Booking.countDocuments({ status: BookingStatus.PENDING, createdAt: { $gte: staff.createdAt } }),
+                Booking.countDocuments({ createdAt: { $gte: startOfMonth } }),
+                Booking.countDocuments({ createdAt: { $gte: startOfWeek } }),
+                Payment.aggregate([
+                    { $match: { status: PaymentStatus.PAID, bookingId: { $in: await Booking.find({ createdAt: { $gte: startOfMonth } }).distinct('_id') } } },
+                    { $group: { _id: null, total: { $sum: '$amount' } } },
+                ]),
+                Payment.aggregate([
+                    { $match: { status: PaymentStatus.PAID, bookingId: { $in: await Booking.find({ createdAt: { $gte: startOfWeek } }).distinct('_id') } } },
+                    { $group: { _id: null, total: { $sum: '$amount' } } },
+                ]),
+                Booking.find({ status: BookingStatus.COMPLETED, createdAt: { $gte: staff.createdAt } }).select('createdAt updatedAt'),
             ]);
-            // Calculate average completion time
-            const completionTimes = averageCompletionTime.map(booking => {
-                const created = new Date(booking.createdAt);
-                const completed = new Date(booking.updatedAt);
-                return completed.getTime() - created.getTime();
-            });
-            const avgCompletionTimeMs = completionTimes.length > 0
-                ? completionTimes.reduce((sum, time) => sum + time, 0) /
-                    completionTimes.length
+            const completionTimes = completionTimeDocs.map(b => new Date(b.updatedAt).getTime() - new Date(b.createdAt).getTime());
+            const avgMs = completionTimes.length > 0
+                ? completionTimes.reduce((s, t) => s + t, 0) / completionTimes.length
                 : 0;
-            const avgCompletionTimeHours = avgCompletionTimeMs / (1000 * 60 * 60);
             return {
-                staffId: staff.id,
+                staffId: staff._id.toString(),
                 staffName: staff.name,
                 staffEmail: staff.email,
                 joinDate: staff.createdAt,
@@ -746,49 +480,31 @@ const ReportingService = {
                 completionRate: totalBookings > 0 ? (completedBookings / totalBookings) * 100 : 0,
                 monthlyBookings,
                 weeklyBookings,
-                monthlyRevenue: monthlyRevenue._sum.amount ?? 0,
-                weeklyRevenue: weeklyRevenue._sum.amount ?? 0,
-                averageCompletionTimeHours: Math.round(avgCompletionTimeHours * 100) / 100,
+                monthlyRevenue: monthlyRevenue[0]?.total ?? 0,
+                weeklyRevenue: weeklyRevenue[0]?.total ?? 0,
+                averageCompletionTimeHours: Math.round((avgMs / (1000 * 60 * 60)) * 100) / 100,
             };
         }));
-        return staffPerformance.sort((a, b) => Number(b.monthlyRevenue) - Number(a.monthlyRevenue));
     },
     async getStaffWorkloadDistribution() {
         const today = new Date();
         const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-        const staffWorkload = await prisma.user.findMany({
-            where: { role: { name: 'STAFF' }, isActive: true },
-            select: {
-                id: true,
-                name: true,
-                email: true,
-            },
-        });
-        const workloadData = await Promise.all(staffWorkload.map(async (staff) => {
-            const [pendingBookings, inProgressBookings, completedToday, completedThisMonth,] = await Promise.all([
-                prisma.booking.count({
-                    where: { status: 'PENDING' },
-                }),
-                prisma.booking.count({
-                    where: { status: 'IN_PROGRESS' },
-                }),
-                prisma.booking.count({
-                    where: {
-                        status: 'COMPLETED',
-                        updatedAt: {
-                            gte: new Date(today.getFullYear(), today.getMonth(), today.getDate()),
-                        },
+        const staffRole = await Role.findOne({ name: 'STAFF' });
+        const staffMembers = await User.find({ roleId: staffRole?._id, isActive: true }).select('id name email');
+        const workloadData = await Promise.all(staffMembers.map(async (staff) => {
+            const [pendingBookings, inProgressBookings, completedToday, completedThisMonth] = await Promise.all([
+                Booking.countDocuments({ status: BookingStatus.PENDING }),
+                Booking.countDocuments({ status: BookingStatus.IN_PROGRESS }),
+                Booking.countDocuments({
+                    status: BookingStatus.COMPLETED,
+                    updatedAt: {
+                        $gte: new Date(today.getFullYear(), today.getMonth(), today.getDate()),
                     },
                 }),
-                prisma.booking.count({
-                    where: {
-                        status: 'COMPLETED',
-                        updatedAt: { gte: startOfMonth },
-                    },
-                }),
+                Booking.countDocuments({ status: BookingStatus.COMPLETED, updatedAt: { $gte: startOfMonth } }),
             ]);
             return {
-                staffId: staff.id,
+                staffId: staff._id.toString(),
                 staffName: staff.name,
                 currentWorkload: pendingBookings + inProgressBookings,
                 pendingBookings,
@@ -797,65 +513,46 @@ const ReportingService = {
                 completedThisMonth,
             };
         }));
+        const [totalPendingBookings, totalInProgressBookings] = await Promise.all([
+            Booking.countDocuments({ status: BookingStatus.PENDING }),
+            Booking.countDocuments({ status: BookingStatus.IN_PROGRESS }),
+        ]);
         return {
-            totalPendingBookings: await prisma.booking.count({
-                where: { status: 'PENDING' },
-            }),
-            totalInProgressBookings: await prisma.booking.count({
-                where: { status: 'IN_PROGRESS' },
-            }),
+            totalPendingBookings,
+            totalInProgressBookings,
             staffWorkload: workloadData.sort((a, b) => b.currentWorkload - a.currentWorkload),
         };
     },
     async getStaffEfficiencyReport(startDate, endDate) {
-        const start = startDate
-            ? new Date(startDate)
-            : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+        const start = startDate ? new Date(startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
         const end = endDate ? new Date(endDate) : new Date();
-        const staffEfficiency = await prisma.user.findMany({
-            where: { role: { name: 'STAFF' }, isActive: true },
-            select: {
-                id: true,
-                name: true,
-                email: true,
-            },
-        });
-        const efficiencyData = await Promise.all(staffEfficiency.map(async (staff) => {
-            const [totalBookings, completedBookings, revenueGenerated, averageOrderValue, customerSatisfaction,] = await Promise.all([
-                prisma.booking.count({
-                    where: {
-                        createdAt: { gte: start, lte: end },
-                    },
-                }),
-                prisma.booking.count({
-                    where: {
-                        status: 'COMPLETED',
-                        createdAt: { gte: start, lte: end },
-                    },
-                }),
-                prisma.payment.aggregate({
-                    _sum: { amount: true },
-                    where: {
-                        status: 'PAID',
-                        booking: {
-                            createdAt: { gte: start, lte: end },
+        const staffRole = await Role.findOne({ name: 'STAFF' });
+        const staffMembers = await User.find({ roleId: staffRole?._id, isActive: true }).select('id name email');
+        const efficiencyData = await Promise.all(staffMembers.map(async (staff) => {
+            const [totalBookings, completedBookings, revenueGenerated, avgOrderResult] = await Promise.all([
+                Booking.countDocuments({ createdAt: { $gte: start, $lte: end } }),
+                Booking.countDocuments({ status: BookingStatus.COMPLETED, createdAt: { $gte: start, $lte: end } }),
+                Payment.aggregate([
+                    {
+                        $match: {
+                            status: PaymentStatus.PAID,
+                            bookingId: {
+                                $in: await Booking.find({ createdAt: { $gte: start, $lte: end } }).distinct('_id'),
+                            },
                         },
                     },
-                }),
-                prisma.booking.aggregate({
-                    _avg: { totalAmount: true },
-                    where: {
-                        createdAt: { gte: start, lte: end },
-                    },
-                }),
-                // For now, we'll use a placeholder for customer satisfaction
-                // This could be linked to testimonials or ratings in the future
-                Promise.resolve(4.5), // Placeholder
+                    { $group: { _id: null, total: { $sum: '$amount' } } },
+                ]),
+                Booking.aggregate([
+                    { $match: { createdAt: { $gte: start, $lte: end } } },
+                    { $group: { _id: null, avg: { $avg: '$totalAmount' } } },
+                ]),
             ]);
             const completionRate = totalBookings > 0 ? (completedBookings / totalBookings) * 100 : 0;
-            const avgOrderValue = averageOrderValue._avg.totalAmount ?? 0;
+            const revenue = revenueGenerated[0]?.total ?? 0;
+            const avgOrderValue = avgOrderResult[0]?.avg ?? 0;
             return {
-                staffId: staff.id,
+                staffId: staff._id.toString(),
                 staffName: staff.name,
                 period: {
                     startDate: start.toISOString().split('T')[0],
@@ -864,10 +561,10 @@ const ReportingService = {
                 totalBookings,
                 completedBookings,
                 completionRate: Math.round(completionRate * 100) / 100,
-                revenueGenerated: revenueGenerated._sum.amount ?? 0,
+                revenueGenerated: revenue,
                 averageOrderValue: Math.round(Number(avgOrderValue) * 100) / 100,
-                customerSatisfaction,
-                efficiency: (completionRate * Number(revenueGenerated._sum.amount ?? 0)) / 100, // Simple efficiency metric
+                customerSatisfaction: 4.5,
+                efficiency: (completionRate * Number(revenue)) / 100,
             };
         }));
         return efficiencyData.sort((a, b) => b.efficiency - a.efficiency);

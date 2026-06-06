@@ -44,7 +44,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
         />
       )}
 
-      <div className='flex-1 transition-all duration-300 lg:ml-64 ml-0'>
+      <div className='flex-1 min-w-0 transition-all duration-300 lg:ml-64 ml-0'>
         <Header
           title={pageTitle}
           subtitle={subtitle}

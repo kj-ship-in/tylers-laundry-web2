@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { MessageSquare, Edit } from 'lucide-react';
+import { MessageSquare, Edit, Star } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { RatingDialog } from '@/components/dialog/RatingDialog';
 import { useMyTestimonials } from '@/hooks/useTestimonials';
 import NoData from '@/components/no -data';
@@ -85,29 +86,68 @@ export function CustomerTestimonialsSection({
         </CardHeader>
         <CardContent>
           {isForbidden ? (
-            <div className='text-center py-8'>
-              <div className='text-red-500 mb-2'>
-                <svg
-                  className='w-12 h-12 mx-auto'
-                  fill='none'
-                  stroke='currentColor'
-                  viewBox='0 0 24 24'
-                >
-                  <path
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    strokeWidth={2}
-                    d='M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z'
-                  />
-                </svg>
-              </div>
-              <h3 className='text-lg font-semibold text-gray-900 mb-2'>
+            <div className='text-center py-8 text-gray-500'>
+              <MessageSquare className='w-12 h-12 mx-auto mb-3 text-gray-300' />
+              <h3 className='text-lg font-semibold text-gray-900 mb-1'>
                 Access Restricted
               </h3>
-              <p className='text-gray-600 mb-4'>
-                You don't have permission to view or manage testimonials. Please
-                contact an administrator if you believe this is an error.
+              <p className='text-sm'>
+                You don't have permission to view or manage testimonials.
               </p>
+            </div>
+          ) : hasExistingTestimonial && existingTestimonial ? (
+            <div className='space-y-4'>
+              <div className='flex items-start justify-between gap-4'>
+                <div className='space-y-2 flex-1'>
+                  <div className='flex items-center gap-2 flex-wrap'>
+                    <div className='flex'>
+                      {[1, 2, 3, 4, 5].map(star => (
+                        <Star
+                          key={star}
+                          className={`w-4 h-4 ${
+                            star <= existingTestimonial.rating
+                              ? 'fill-yellow-400 text-yellow-400'
+                              : 'text-gray-300'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <Badge
+                      className={
+                        existingTestimonial.isApproved
+                          ? 'bg-green-100 text-green-700 hover:bg-green-100'
+                          : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-100'
+                      }
+                    >
+                      {existingTestimonial.isApproved
+                        ? 'Approved'
+                        : 'Pending approval'}
+                    </Badge>
+                  </div>
+                  <p className='font-semibold text-gray-900'>
+                    {existingTestimonial.title}
+                  </p>
+                  <p className='text-gray-600 leading-relaxed'>
+                    {existingTestimonial.content}
+                  </p>
+                  <p className='text-xs text-gray-400'>
+                    Submitted{' '}
+                    {new Date(existingTestimonial.createdAt).toLocaleDateString(
+                      'en-US',
+                      { month: 'long', day: 'numeric', year: 'numeric' },
+                    )}
+                  </p>
+                </div>
+                <Button
+                  size='sm'
+                  variant='outline'
+                  onClick={() => setShowRatingDialog(true)}
+                  className='shrink-0'
+                >
+                  <Edit className='w-3.5 h-3.5 mr-1.5' />
+                  Edit
+                </Button>
+              </div>
             </div>
           ) : (
             <NoData

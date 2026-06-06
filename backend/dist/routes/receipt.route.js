@@ -2,7 +2,7 @@ import express from 'express';
 import { createReceiptController, getAllReceiptsController, getReceiptByIdController, updateReceiptController, deleteReceiptController, generateReceiptPDFController, generateReceiptsReportController, getReceiptStatsController, } from '../controllers/receipt.controller';
 import { authMiddleware } from '../middlewares/auth.middleware';
 import { requirePermission } from '../middlewares/permission.middleware';
-import { Permission } from '../prisma/generated/prisma';
+import { Permission } from '../types/enums';
 const router = express.Router();
 router.use(authMiddleware);
 // CRUD operations

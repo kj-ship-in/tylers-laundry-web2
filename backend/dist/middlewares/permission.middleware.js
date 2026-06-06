@@ -1,4 +1,4 @@
-import { Permission } from '../prisma/generated/prisma';
+import { Permission } from '../types/enums';
 import { userHasPermission, userHasAnyPermission, } from '../services/permission.service';
 /**
  * Middleware to check if user has required permission

@@ -26,7 +26,7 @@ interface ReceiptDetailsSheetProps {
   receipt: Receipt | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onDownloadPDF?: (receiptId: number) => void;
+  onDownloadPDF?: (receiptId: string) => void;
 }
 
 const ReceiptDetailsSheet: React.FC<ReceiptDetailsSheetProps> = ({

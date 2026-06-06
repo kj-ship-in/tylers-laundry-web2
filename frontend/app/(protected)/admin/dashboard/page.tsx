@@ -1,14 +1,7 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
-import {
-  DollarSign,
-  Package,
-  Users,
-  FileText,
-  Plus,
-  Calendar,
-} from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { DollarSign, Package, Users, FileText, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AdminStatsGrid } from '@/components/dashboard/AdminStatsGrid';
 import {
@@ -17,6 +10,7 @@ import {
   useStaffPerformance,
   useStaffWorkload,
   useStaffEfficiency,
+  useDailyOverview,
 } from '@/hooks/useAdminDashboardQueries';
 import RecentBookings from '@/components/dashboard/RecentBookings';
 import TodaysOverview from '@/components/dashboard/TodaysOverview';
@@ -25,41 +19,31 @@ import NoData from '@/components/no -data';
 import AddBookingDialog from '@/components/dialog/AddBookingDialog';
 import SchedulePickupDialog from '@/components/dialog/SchedulePickupDialog';
 
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { useFetchServiceStats } from '@/hooks/useServicesQuery';
 import { usePermissions } from '@/hooks/usePermissions';
 
 const Dashboard = () => {
   const [isBookingDialogOpen, setIsBookingDialogOpen] = useState(false);
   const [isScheduleDialogOpen, setIsScheduleDialogOpen] = useState(false);
-  const { data: dashboardStats, isFetching: statsLoading } =
+  const { data: dashboardStats, isLoading: statsLoading } =
     useAdminDashboardStats();
-  const { data: servicesStats, isFetching: servicesLoading } =
+  const { data: servicesStats, isLoading: servicesLoading } =
     useFetchServiceStats();
 
   const { hasPermission } = usePermissions();
 
-  const {
-    data: bookings,
-    isFetching: isLoading,
-    isError,
-    error,
-  } = useRecentBookings(10);
+  const { data: bookings, isLoading, error } = useRecentBookings(10);
 
   const {
     data: staffPerformance,
-    isFetching: staffPerformanceLoading,
+    isLoading: staffPerformanceLoading,
     refetch: refetchStaffPerformance,
   } = useStaffPerformance();
 
   const {
     data: staffWorkload,
-    isFetching: staffWorkloadLoading,
+    isLoading: staffWorkloadLoading,
     refetch: refetchStaffWorkload,
   } = useStaffWorkload();
 
@@ -77,9 +61,16 @@ const Dashboard = () => {
 
   const {
     data: staffEfficiency,
-    isFetching: staffEfficiencyLoading,
+    isLoading: staffEfficiencyLoading,
     refetch: refetchStaffEfficiency,
   } = useStaffEfficiency(dateRange.startDate, dateRange.endDate);
+
+  const {
+    data: dailyOverview,
+    isLoading: dailyOverviewLoading,
+    isError: dailyOverviewError,
+    error: dailyOverviewErrorData,
+  } = useDailyOverview();
 
   // Transform API data to stats format
   const stats = useMemo(() => {
@@ -161,7 +152,12 @@ const Dashboard = () => {
           </Card>
 
           {/* Today's Overview */}
-          <TodaysOverview />
+          <TodaysOverview
+            data={dailyOverview}
+            isLoading={dailyOverviewLoading}
+            isError={dailyOverviewError}
+            error={dailyOverviewErrorData}
+          />
         </div>
       </div>
 

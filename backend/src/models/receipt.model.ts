@@ -23,4 +23,16 @@ const ReceiptSchema = new Schema<IReceipt>(
 
 ReceiptSchema.index({ issuedAt: 1 });
 
+ReceiptSchema.set('toJSON', {
+  virtuals: true,
+  transform: (_doc, ret: any) => {
+    if (ret.invoiceId && typeof ret.invoiceId === 'object') {
+      ret.invoice = ret.invoiceId;
+      delete ret.invoiceId;
+    }
+    return ret;
+  },
+});
+ReceiptSchema.set('toObject', { virtuals: true });
+
 export const Receipt = mongoose.model<IReceipt>('Receipt', ReceiptSchema);

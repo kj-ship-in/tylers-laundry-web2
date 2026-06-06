@@ -14,13 +14,8 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import type { Testimonial } from '@/types/testimonials';
-import {
-  Star,
-  User,
-  Calendar,
-  CheckCircle,
-  ThumbsUp,
-} from 'lucide-react';
+import { appImages } from '@/constants/app-images';
+import { Star, User, Calendar, CheckCircle, ThumbsUp } from 'lucide-react';
 
 interface TestimonialDetailsSheetProps {
   isOpen: boolean;
@@ -60,8 +55,12 @@ export const TestimonialDetailsSheet: React.FC<
           <div className='flex items-center space-x-4'>
             <Avatar className='h-16 w-16'>
               <AvatarImage
-                src={testimonial.user.profileUrl}
-                alt={testimonial.user.name}
+                src={
+                  testimonial.user?.profileUrl
+                    ? `/api/images${testimonial.user.profileUrl}`
+                    : appImages.profileImage.src
+                }
+                alt={testimonial.user?.name ?? 'User'}
               />
               <AvatarFallback>
                 <User className='w-6 h-6' />

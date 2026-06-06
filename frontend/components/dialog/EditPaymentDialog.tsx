@@ -91,7 +91,7 @@ const EditPaymentDialog: React.FC<EditPaymentDialogProps> = ({
 
     setError(null);
     updatePaymentMutation.mutate({
-      paymentId: payment.id,
+      paymentId: payment._id,
       data,
     });
   };

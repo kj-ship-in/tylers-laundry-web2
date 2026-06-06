@@ -20,7 +20,6 @@ import ServiceDetailsSheet from '@/components/sheets/ServiceDetailsSheet';
 import AddServiceDialog from '@/components/dialog/AddServiceDialog';
 import DeleteServiceDialog from '@/components/dialog/DeleteServiceDialog';
 import { usePermissions } from '@/hooks/usePermissions';
-import { Permission } from '@/types/permission';
 
 const ServicesPage = () => {
   const { data, isLoading, error } = useFetchServices();
@@ -115,28 +114,45 @@ const ServicesPage = () => {
     key?: keyof Service;
     title: string;
     width?: string;
+    className?: string;
     render?: (value: any, row?: Service, index?: number) => React.ReactNode;
   }> = [
     {
-      title: '#No',
-      width: '60px',
-      render: (_: any, __: any, index?: number) => {
-        const rowIndex = (index ?? 0) + 1;
-        const formattedIndex = rowIndex.toString().padStart(2, '0');
-        return (
-          <div className='text-start text-slate-600'>{formattedIndex}</div>
-        );
-      },
+      title: '#',
+      width: '48px',
+      render: (_: any, __: any, index?: number) => (
+        <span className='text-slate-400 text-sm font-mono'>
+          {String((index ?? 0) + 1).padStart(2, '0')}
+        </span>
+      ),
     },
     {
       title: 'Service',
       render: (_: any, row?: Service) => {
         if (!row) return 'N/A';
         return (
-          <div className='space-y-1'>
-            <div className='font-medium text-gray-900'>{row.title}</div>
+          <div className='space-y-1 min-w-[140px]'>
+            <div className='font-medium text-gray-900 leading-tight'>
+              {row.title}
+            </div>
+            <div className='flex items-center gap-2 flex-wrap'>
+              {row.type && (
+                <Badge variant='secondary' className='text-xs capitalize'>
+                  {row.type}
+                </Badge>
+              )}
+              {row.isActive ? (
+                <Badge className='text-xs bg-green-100 text-green-700 hover:bg-green-100'>
+                  Active
+                </Badge>
+              ) : (
+                <Badge variant='outline' className='text-xs text-gray-400'>
+                  Inactive
+                </Badge>
+              )}
+            </div>
             {row.description && (
-              <div className='text-sm text-gray-600 line-clamp-2'>
+              <div className='text-xs text-gray-500 line-clamp-1 max-w-xs'>
                 {row.description}
               </div>
             )}
@@ -145,81 +161,66 @@ const ServicesPage = () => {
       },
     },
     {
-      key: 'turnaround',
+      title: 'Price',
+      key: 'price',
+      width: '90px',
+      render: (value: number) => (
+        <span className='font-semibold text-gray-900'>
+          ${Number(value ?? 0).toFixed(2)}
+        </span>
+      ),
+    },
+    {
       title: 'Turnaround',
+      key: 'turnaround',
+      className: 'hidden sm:table-cell',
+      width: '120px',
+      render: (value: string) => (
+        <span className='text-sm text-gray-600 whitespace-nowrap'>
+          {value || '—'}
+        </span>
+      ),
     },
     {
       title: 'Features',
+      className: 'hidden md:table-cell',
       render: (_: any, row?: Service) => {
-        if (!row?.features || row.features.length === 0) return 'N/A';
+        if (!row) return null;
+        const featureCount = row.features?.length ?? 0;
+        const includeCount = row.includes?.length ?? 0;
+
+        const idealItems: string[] = Array.isArray(row.ideal)
+          ? row.ideal
+          : typeof row.ideal === 'string' && row.ideal.trim()
+            ? row.ideal
+                .split(',')
+                .map(s => s.trim())
+                .filter(Boolean)
+            : [];
+
         return (
-          <div className='flex flex-wrap gap-1 max-w-[200px]'>
-            {row.features.slice(0, 2).map((feature, index) => (
-              <Badge key={index} variant='outline' className='text-xs'>
-                {feature}
-              </Badge>
-            ))}
-            {row.features.length > 2 && (
-              <Badge variant='outline' className='text-xs'>
-                +{row.features.length - 2} more
-              </Badge>
+          <div className='flex flex-col gap-1 text-xs text-gray-600 min-w-[130px]'>
+            {featureCount > 0 && (
+              <span>
+                <span className='font-medium text-gray-700'>
+                  {featureCount}
+                </span>{' '}
+                feature{featureCount !== 1 ? 's' : ''}
+              </span>
             )}
-          </div>
-        );
-      },
-    },
-    {
-      title: 'Includes',
-      render: (_: any, row?: Service) => {
-        if (!row?.includes || row.includes.length === 0) return 'N/A';
-        return (
-          <div className='flex flex-wrap gap-1 max-w-[200px]'>
-            {row.includes.slice(0, 2).map((include, index) => (
-              <Badge key={index} variant='outline' className='text-xs'>
-                {include}
-              </Badge>
-            ))}
-            {row.includes.length > 2 && (
-              <Badge variant='outline' className='text-xs'>
-                +{row.includes.length - 2} more
-              </Badge>
+            {includeCount > 0 && (
+              <span>
+                <span className='font-medium text-gray-700'>
+                  {includeCount}
+                </span>{' '}
+                included
+              </span>
             )}
-          </div>
-        );
-      },
-    },
-    {
-      title: 'Ideal For',
-      render: (_: any, row?: Service) => {
-        if (!row?.ideal) return 'N/A';
-
-        // Handle case where ideal might be a string (from API) or array
-        let idealItems: string[];
-        if (Array.isArray(row.ideal)) {
-          idealItems = row.ideal;
-        } else if (typeof (row.ideal as any) === 'string' && row.ideal.trim()) {
-          // Split comma-separated string and trim each item
-          idealItems = row.ideal
-            .split(',')
-            .map(item => item.trim())
-            .filter(item => item.length > 0);
-        } else {
-          idealItems = [];
-        }
-
-        if (idealItems.length === 0) return 'N/A';
-
-        return (
-          <div className='flex flex-wrap gap-1 max-w-[200px]'>
-            {idealItems.slice(0, 2).map((item, index) => (
-              <Badge key={index} variant='outline' className='text-xs'>
-                {item}
-              </Badge>
-            ))}
-            {idealItems.length > 2 && (
-              <Badge variant='outline' className='text-xs'>
-                +{idealItems.length - 2} more
-              </Badge>
+            {idealItems.length > 0 && (
+              <span className='text-gray-500 line-clamp-1'>
+                For: {idealItems.slice(0, 2).join(', ')}
+                {idealItems.length > 2 ? '…' : ''}
+              </span>
             )}
           </div>
         );
@@ -227,30 +228,41 @@ const ServicesPage = () => {
     },
     {
       key: 'createdAt',
-      title: 'Created At',
-      render: (value: string) => new Date(value).toLocaleDateString(),
+      title: 'Created',
+      className: 'hidden lg:table-cell',
+      width: '100px',
+      render: (value: string) => (
+        <span className='text-sm text-gray-500 whitespace-nowrap'>
+          {new Date(value).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+          })}
+        </span>
+      ),
     },
     {
       title: 'Actions',
+      width: '60px',
       render: (_: any, row?: Service) => {
         if (!row) return null;
         return (
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant='ghost' size='sm'>
+              <Button variant='ghost' size='sm' className='h-8 w-8 p-0'>
                 <MoreVertical className='w-4 h-4' />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className='w-40 p-0' align='end'>
-              <div className='flex flex-col'>
+            <PopoverContent className='w-40 p-1' align='end'>
+              <div className='flex flex-col gap-0.5'>
                 {hasPermission('service:view') && (
                   <Button
                     variant='ghost'
                     size='sm'
-                    className='justify-start'
+                    className='justify-start h-8 text-sm'
                     onClick={() => handleViewService(row._id)}
                   >
-                    <Eye className='w-4 h-4 mr-2' />
+                    <Eye className='w-3.5 h-3.5 mr-2' />
                     View
                   </Button>
                 )}
@@ -258,10 +270,10 @@ const ServicesPage = () => {
                   <Button
                     variant='ghost'
                     size='sm'
-                    className='justify-start'
+                    className='justify-start h-8 text-sm'
                     onClick={() => handleEditService(row)}
                   >
-                    <Edit className='w-4 h-4 mr-2' />
+                    <Edit className='w-3.5 h-3.5 mr-2' />
                     Edit
                   </Button>
                 )}
@@ -269,10 +281,10 @@ const ServicesPage = () => {
                   <Button
                     variant='ghost'
                     size='sm'
-                    className='justify-start text-red-600 hover:text-red-700 hover:bg-red-50'
+                    className='justify-start h-8 text-sm text-red-600 hover:text-red-700 hover:bg-red-50'
                     onClick={() => handleDeleteService(row)}
                   >
-                    <Trash2 className='w-4 h-4 mr-2' />
+                    <Trash2 className='w-3.5 h-3.5 mr-2' />
                     Delete
                   </Button>
                 )}

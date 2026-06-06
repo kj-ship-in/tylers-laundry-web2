@@ -42,7 +42,16 @@ PaymentSchema.virtual('invoice', {
   justOne: true,
 });
 
-PaymentSchema.set('toJSON', { virtuals: true });
+PaymentSchema.set('toJSON', {
+  virtuals: true,
+  transform: (_doc, ret: any) => {
+    if (ret.bookingId && typeof ret.bookingId === 'object') {
+      ret.booking = ret.bookingId;
+      delete ret.bookingId;
+    }
+    return ret;
+  },
+});
 PaymentSchema.set('toObject', { virtuals: true });
 
 export const Payment = mongoose.model<IPayment>('Payment', PaymentSchema);

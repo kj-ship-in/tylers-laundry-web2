@@ -1,8 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import DataTable from '@/components/table/DataTable';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   useReceipts,
@@ -13,14 +12,7 @@ import {
 } from '@/hooks/useReceiptQueries';
 import type { Receipt, ReceiptParams } from '@/types/receipt';
 import { format } from 'date-fns';
-import {
-  MoreHorizontal,
-  Eye,
-  Trash2,
-  Plus,
-  FileText,
-  Download,
-} from 'lucide-react';
+import { MoreHorizontal, Eye, Trash2, FileText, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Select,
@@ -42,7 +34,6 @@ import AddReceiptDialog from '@/components/dialog/AddReceiptDialog';
 import EditReceiptDialog from '@/components/dialog/EditReceiptDialog';
 import { DatePicker } from '@/components/ui/date-picker';
 import { usePermissions } from '@/hooks/usePermissions';
-import { Permission } from '@/types/permission';
 
 const ReceiptsPage = () => {
   // Permission checks
@@ -50,7 +41,7 @@ const ReceiptsPage = () => {
 
   // Pagination and search state
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize] = useState(10);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('all');
   const [startDate, setStartDate] = useState<Date | undefined>();
@@ -124,13 +115,9 @@ const ReceiptsPage = () => {
   };
 
   // Queries
-  const {
-    data: receiptsData,
-    isFetching,
-    isError,
-    error,
-  } = useReceipts(queryParams);
-  const { data: stats, isFetching: statsLoading } = useReceiptStats();
+  const { data: receiptsData, isLoading: isFetching } =
+    useReceipts(queryParams);
+  const { data: stats, isLoading: statsLoading } = useReceiptStats();
 
   const receipts = receiptsData?.data ?? [];
   const pagination = receiptsData?.pagination;
@@ -187,7 +174,8 @@ const ReceiptsPage = () => {
       title: 'Invoice',
       render: (_: any, row?: Receipt) => (
         <div className='text-sm text-gray-600'>
-          #{row?.invoice._id} - {formatToGMD(row?.invoice.totalAmount ?? 0)}
+          #{row?.invoice?._id ?? '—'} -{' '}
+          {formatToGMD(row?.invoice?.totalAmount ?? 0)}
         </div>
       ),
     },
@@ -211,7 +199,7 @@ const ReceiptsPage = () => {
       title: 'Amount',
       render: (_: any, row?: Receipt) => (
         <div className='font-medium text-green-600'>
-          {formatToGMD(row?.invoice.totalAmount ?? 0)}
+          {formatToGMD(row?.invoice?.totalAmount ?? 0)}
         </div>
       ),
     },

@@ -98,8 +98,6 @@ const AddBookingDialog: React.FC<AddBookingDialogProps> = ({
 
       const bookingData = {
         ...values,
-        userId: parseInt(values.userId),
-        serviceId: parseInt(values.serviceId),
         totalAmount,
       };
 
@@ -322,8 +320,9 @@ const AddBookingDialog: React.FC<AddBookingDialogProps> = ({
                     type='number'
                     step='0.01'
                     value={
-                      (services?.find(s => s._id.toString() === watchedServiceId)
-                        ?.price ?? 0) + (watchedDeliveryFee || 0)
+                      (services?.find(
+                        s => s._id.toString() === watchedServiceId,
+                      )?.price ?? 0) + (watchedDeliveryFee || 0)
                     }
                     readOnly
                     className='bg-gray-50'

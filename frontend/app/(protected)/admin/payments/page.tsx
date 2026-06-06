@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import DataTable from '@/components/table/DataTable';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -24,7 +24,6 @@ import {
   MoreHorizontal,
   Eye,
   Trash2,
-  Plus,
   CreditCard,
   RefreshCw,
 } from 'lucide-react';
@@ -54,7 +53,6 @@ import { appImages } from '@/constants/app-images';
 import { DatePicker } from '@/components/ui/date-picker';
 import { format } from 'date-fns';
 import { usePermissions } from '@/hooks/usePermissions';
-import { Permission } from '@/types/permission';
 
 const PaymentsPage = () => {
   // Permission checks
@@ -62,7 +60,7 @@ const PaymentsPage = () => {
 
   // Pagination and search state
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize] = useState(10);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<PaymentStatus | 'ALL'>(
     'ALL',
@@ -103,12 +101,7 @@ const PaymentsPage = () => {
     ...(endDate && { endDate: format(endDate, 'yyyy-MM-dd') }),
   };
 
-  const {
-    data,
-    isFetching: isLoading,
-    error,
-    refetch,
-  } = usePayments(queryParams);
+  const { data, isLoading, error, refetch } = usePayments(queryParams);
   const payments = data?.data ?? [];
   const pagination = data?.pagination;
 

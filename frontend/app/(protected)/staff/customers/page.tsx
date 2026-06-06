@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import DataTable from '@/components/table/DataTable';
 import { Badge } from '@/components/ui/badge';
 import { useCustomers } from '@/hooks/useUserQuery';
@@ -16,25 +16,23 @@ import {
 import { MoreHorizontal, Eye, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { usePermissions } from '@/hooks/usePermissions';
-import { Permission } from '@/types/permission';
 
 const CustomersPage = () => {
   // Permission checks
   const { hasPermission } = usePermissions();
 
   // Pagination and search state
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [search, setSearch] = useState('');
+  const [page] = useState(1);
+  const [pageSize] = useState(10);
+  const [search] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState<User | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
 
-  const {
-    data,
-    isFetching: isLoading,
-    error,
-    refetch,
-  } = useCustomers(page, pageSize, search);
+  const { data, isLoading, error, refetch } = useCustomers(
+    page,
+    pageSize,
+    search,
+  );
   const customers = data?.data ?? [];
   const pagination = data?.pagination;
 

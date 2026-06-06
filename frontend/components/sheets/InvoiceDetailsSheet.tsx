@@ -28,9 +28,9 @@ interface InvoiceDetailsSheetProps {
   isOpen: boolean;
   onClose: () => void;
   invoice: InvoiceResponse | null;
-  onDelete?: (invoiceId: number) => void;
-  onMarkAsPaid?: (invoiceId: number) => void;
-  onDownloadPDF?: (invoiceId: number) => void;
+  onDelete?: (invoiceId: string) => void;
+  onMarkAsPaid?: (invoiceId: string) => void;
+  onDownloadPDF?: (invoiceId: string) => void;
 }
 
 const InvoiceDetailsSheet: React.FC<InvoiceDetailsSheetProps> = ({
@@ -99,7 +99,7 @@ const InvoiceDetailsSheet: React.FC<InvoiceDetailsSheetProps> = ({
                   <Hash className='h-4 w-4' />
                   Payment ID
                 </div>
-                <p className='font-medium'>#{invoice.payment._id}</p>
+                <p className='font-medium'>#{invoice.payment?._id ?? '—'}</p>
               </div>
             </div>
 

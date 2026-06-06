@@ -1,4 +1,4 @@
-import prisma from '../lib/prisma';
+import { Testimonial } from '../models/testimonial.model';
 import { createTestimonialService, getAllTestimonialsService, getTestimonialByIdService, updateTestimonialService, deleteTestimonialService, approveTestimonialService, getTestimonialStatsService, getAllAdminTestimonialsService, } from '../services/testimonial.service';
 import { CreateTestimonialSchema, UpdateTestimonialSchema, GetTestimonialsQuerySchema, } from '../validators/testimonial.schema';
 export const createTestimonialController = async (req, res, next) => {
@@ -62,7 +62,7 @@ export const getAllAdminTestimonialsController = async (req, res, next) => {
 export const getTestimonialByIdController = async (req, res, next) => {
     try {
         const { id } = req.params;
-        const testimonial = await getTestimonialByIdService(Number(id));
+        const testimonial = await getTestimonialByIdService(id);
         if (!testimonial) {
             return res.status(404).json({ message: 'Testimonial not found' });
         }
@@ -78,21 +78,12 @@ export const getUserTestimonialsController = async (req, res, next) => {
         if (!userId) {
             return res.status(401).json({ message: 'Unauthorized' });
         }
-        const testimonial = await prisma.testimonial.findFirst({
-            where: {
-                userId,
-                isActive: true,
-            },
-            include: {
-                user: {
-                    select: {
-                        id: true,
-                        name: true,
-                        profileUrl: true,
-                    },
-                },
-            },
-        });
+        const raw = await Testimonial.findOne({ userId, isActive: true })
+            .populate({ path: 'userId', select: '_id name profileUrl' })
+            .lean();
+        const testimonial = raw
+            ? (() => { const { userId: u, ...rest } = raw; return { ...rest, user: u ?? null }; })()
+            : null;
         return res
             .set('Cache-Control', 'no-cache, no-store, must-revalidate')
             .set('Pragma', 'no-cache')
@@ -112,7 +103,7 @@ export const updateTestimonialController = async (req, res, next) => {
         }
         const { id } = req.params;
         const validatedData = UpdateTestimonialSchema.parse(req.body);
-        const testimonial = await updateTestimonialService(Number(id), userId, validatedData);
+        const testimonial = await updateTestimonialService(id, userId, validatedData);
         return res.status(200).json({
             message: 'Testimonial updated successfully',
             data: testimonial,
@@ -132,7 +123,7 @@ export const deleteTestimonialController = async (req, res, next) => {
             return res.status(401).json({ message: 'Unauthorized' });
         }
         const { id } = req.params;
-        await deleteTestimonialService(Number(id), userId);
+        await deleteTestimonialService(id, userId);
         return res.status(200).json({
             message: 'Testimonial deleted successfully',
         });
@@ -147,7 +138,7 @@ export const deleteTestimonialController = async (req, res, next) => {
 export const approveTestimonialController = async (req, res, next) => {
     try {
         const { id } = req.params;
-        const testimonial = await approveTestimonialService(Number(id));
+        const testimonial = await approveTestimonialService(id);
         return res.status(200).json({
             message: 'Testimonial approved successfully',
             data: testimonial,
@@ -166,10 +157,7 @@ export const approveTestimonialController = async (req, res, next) => {
 export const getTestimonialStatsController = async (_, res, next) => {
     try {
         const stats = await getTestimonialStatsService();
-        return res.status(200).json({
-            message: 'Testimonial statistics retrieved successfully',
-            data: stats,
-        });
+        return res.status(200).json(stats);
     }
     catch (error) {
         next(error);

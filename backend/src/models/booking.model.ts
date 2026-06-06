@@ -49,7 +49,20 @@ BookingSchema.virtual('payments', {
   foreignField: 'bookingId',
 });
 
-BookingSchema.set('toJSON', { virtuals: true });
+BookingSchema.set('toJSON', {
+  virtuals: true,
+  transform: (_doc, ret: any) => {
+    if (ret.userId && typeof ret.userId === 'object') {
+      ret.user = ret.userId;
+      delete ret.userId;
+    }
+    if (ret.serviceId && typeof ret.serviceId === 'object') {
+      ret.service = ret.serviceId;
+      delete ret.serviceId;
+    }
+    return ret;
+  },
+});
 BookingSchema.set('toObject', { virtuals: true });
 
 export const Booking = mongoose.model<IBooking>('Booking', BookingSchema);

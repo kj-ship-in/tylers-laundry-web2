@@ -2,7 +2,7 @@ import express from 'express';
 import { createPaymentController, getAllPaymentsController, getPaymentByIdController, updatePaymentController, deletePaymentController, refundPaymentController, markAsPaidController, updatePaymentStatusController, } from '../controllers/payment.controller';
 import { authMiddleware } from '../middlewares/auth.middleware';
 import { requirePermission } from '../middlewares/permission.middleware';
-import { Permission } from '../prisma/generated/prisma';
+import { Permission } from '../types/enums';
 const router = express.Router();
 router.use(authMiddleware);
 // Payment management routes - require specific permissions

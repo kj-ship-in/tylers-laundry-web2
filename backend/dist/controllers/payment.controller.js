@@ -53,7 +53,7 @@ export const getAllPaymentsController = async (req, res, next) => {
 };
 export const getPaymentByIdController = async (req, res, next) => {
     try {
-        const id = Number(req.params.id);
+        const id = req.params.id;
         const payment = await paymentService.getPaymentById(id);
         if (!payment)
             return res.status(404).json({ message: 'Payment not found' });
@@ -65,7 +65,7 @@ export const getPaymentByIdController = async (req, res, next) => {
 };
 export const updatePaymentController = async (req, res, next) => {
     try {
-        const id = Number(req.params.id);
+        const id = req.params.id;
         const parsed = updatePaymentSchema.safeParse(req.body);
         if (!parsed.success) {
             return res.status(400).json({
@@ -81,7 +81,7 @@ export const updatePaymentController = async (req, res, next) => {
 };
 export const deletePaymentController = async (req, res, next) => {
     try {
-        const id = Number(req.params.id);
+        const id = req.params.id;
         await paymentService.deletePayment(id);
         res.json({ message: 'Payment deleted successfully' });
     }
@@ -91,7 +91,7 @@ export const deletePaymentController = async (req, res, next) => {
 };
 export const refundPaymentController = async (req, res, next) => {
     try {
-        const id = Number(req.params.id);
+        const id = req.params.id;
         const { reason } = req.body;
         const refundedPayment = await paymentService.refundPayment(id, reason);
         res.json({
@@ -105,7 +105,7 @@ export const refundPaymentController = async (req, res, next) => {
 };
 export const markAsPaidController = async (req, res, next) => {
     try {
-        const id = Number(req.params.id);
+        const id = req.params.id;
         const paidPayment = await paymentService.markAsPaid(id);
         res.json({
             data: paidPayment,
@@ -118,7 +118,7 @@ export const markAsPaidController = async (req, res, next) => {
 };
 export const updatePaymentStatusController = async (req, res, next) => {
     try {
-        const id = Number(req.params.id);
+        const id = req.params.id;
         const parsed = updatePaymentStatusSchema.safeParse(req.body);
         if (!parsed.success) {
             return res.status(400).json({

@@ -25,7 +25,7 @@ import { Permission } from '@/types/permission';
 const ServicesPage = () => {
   const { data, isLoading, error } = useFetchServices();
   const services = data ?? [];
-  const [selectedServiceId, setSelectedServiceId] = useState<number | null>(
+  const [selectedServiceId, setSelectedServiceId] = useState<string | null>(
     null,
   );
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -40,7 +40,7 @@ const ServicesPage = () => {
   const { hasPermission } = usePermissions();
 
   const { data: serviceDetails, isLoading: loadingDetails } =
-    useFetchServicesById(selectedServiceId?.toString() ?? '');
+    useFetchServicesById(selectedServiceId ?? '');
 
   const deleteServiceMutation = useDeleteService(
     () => {
@@ -62,7 +62,7 @@ const ServicesPage = () => {
     },
   );
 
-  const handleViewService = (serviceId: number) => {
+  const handleViewService = (serviceId: string) => {
     setSelectedServiceId(serviceId);
     setDrawerOpen(true);
   };

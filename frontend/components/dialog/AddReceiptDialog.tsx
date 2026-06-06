@@ -82,7 +82,7 @@ const AddReceiptDialog: React.FC<AddReceiptDialogProps> = ({
     setError(null);
 
     const payload = {
-      invoiceId: Number(data.invoiceId),
+      invoiceId: data.invoiceId,
       issuedAt: new Date(data.issuedAt).toISOString(),
       receivedBy: data.receivedBy || undefined,
       notes: data.notes || undefined,
@@ -122,8 +122,12 @@ const AddReceiptDialog: React.FC<AddReceiptDialogProps> = ({
                   disabled={invoicesLoading}
                 >
                   {invoices.map(invoice => (
-                    <SelectItem key={invoice._id} value={invoice._id.toString()}>
-                      Invoice #{invoice._id} - {formatToGMD(invoice.totalAmount)}
+                    <SelectItem
+                      key={invoice._id}
+                      value={invoice._id.toString()}
+                    >
+                      Invoice #{invoice._id} -{' '}
+                      {formatToGMD(invoice.totalAmount)}
                     </SelectItem>
                   ))}
                 </SelectInput>

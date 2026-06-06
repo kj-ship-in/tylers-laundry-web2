@@ -1,4 +1,4 @@
-import { UserType } from '../prisma/generated/prisma';
+import { UserType } from '../types/enums';
 import { verifyToken } from '../utils/jwt';
 import logger from '../utils/logger';
 import { AuthenticationError, AuthorizationError } from './error.middleware';

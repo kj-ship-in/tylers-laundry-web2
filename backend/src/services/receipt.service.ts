@@ -142,13 +142,18 @@ export const generateReceiptsReport = async (filters: {
     .populate(receiptPopulate as any)
     .sort({ createdAt: -1 });
 
-  const flattenedReceipts = receipts.map((r: any) => ({
-    ...r.toObject(),
-    payment: r.invoiceId?.paymentId ?? null,
-    booking: r.invoiceId?.paymentId?.bookingId ?? null,
-    user: r.invoiceId?.paymentId?.bookingId?.userId ?? null,
-    service: r.invoiceId?.paymentId?.bookingId?.serviceId ?? null,
-  }));
+  // toJSON() applies transforms recursively across all nested models:
+  // invoiceId→invoice, paymentId→payment, bookingId→booking, serviceId→service, userId→user
+  const flattenedReceipts = receipts.map((r: any) => {
+    const plain = r.toJSON();
+    return {
+      ...plain,
+      payment: plain.invoice?.payment ?? null,
+      booking: plain.invoice?.payment?.booking ?? null,
+      user: plain.invoice?.payment?.booking?.user ?? null,
+      service: plain.invoice?.payment?.booking?.service ?? null,
+    };
+  });
 
   if (filters.format === 'excel') {
     const excelBuffer = await ExcelReportGenerator.generateReceiptsReport(flattenedReceipts, filters);

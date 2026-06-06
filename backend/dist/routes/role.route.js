@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { createRoleController, getAllRolesController, getRoleByIdController, updateRoleController, deleteRoleController, assignPermissionsToRoleController, getAllPermissionsController, assignRoleToUserController, resetUserPermissionsController, addUserPermissionsController, removeUserPermissionsController, } from '../controllers/role.controller';
 import { authMiddleware } from '../middlewares/auth.middleware';
 import { requirePermission } from '../middlewares/permission.middleware';
-import { Permission } from '../prisma/generated/prisma';
+import { Permission } from '../types/enums';
 const router = Router();
 // Apply authentication to all routes
 router.use(authMiddleware);

@@ -81,7 +81,7 @@ const EditReceiptDialog: React.FC<EditReceiptDialogProps> = ({
     };
 
     updateReceiptMutation.mutate({
-      receiptId: receipt.id,
+      receiptId: receipt._id,
       payload,
     });
   };

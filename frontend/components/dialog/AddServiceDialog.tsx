@@ -186,7 +186,7 @@ const AddServiceDialog: React.FC<AddServiceDialogProps> = ({
 
       if (isEditMode && service) {
         await updateServiceMutation.mutateAsync({
-          serviceId: service.id.toString(),
+          serviceId: service._id,
           updateData: cleanedValues,
         });
       } else {

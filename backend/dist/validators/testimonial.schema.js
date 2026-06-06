@@ -1,4 +1,5 @@
 import { z } from 'zod';
+const mongoIdRegex = /^[0-9a-fA-F]{24}$/;
 export const CreateTestimonialSchema = z.object({
     rating: z
         .number()
@@ -54,8 +55,5 @@ export const GetTestimonialsQuerySchema = z.object({
         .optional(),
 });
 export const TestimonialIdSchema = z.object({
-    id: z
-        .string()
-        .transform(val => parseInt(val, 10))
-        .refine(val => val > 0, 'Invalid testimonial ID'),
+    id: z.string().regex(mongoIdRegex, 'Invalid testimonial ID'),
 });

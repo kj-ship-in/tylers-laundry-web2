@@ -93,7 +93,7 @@ const EditInvoiceDialog: React.FC<EditInvoiceDialogProps> = ({
     };
 
     updateInvoiceMutation.mutate({
-      invoiceId: invoice.id,
+      invoiceId: invoice._id,
       data: payload,
     });
   };

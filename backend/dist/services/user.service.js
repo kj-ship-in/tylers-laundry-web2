@@ -1,63 +1,27 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import prisma from '../lib/prisma';
+import { Booking } from '../models/booking.model';
+import { Role } from '../models/role.model';
+import { User } from '../models/user.model';
 import { getPermissionsAsStrings } from './permission.service';
-export const getCustomersService = async (options) => {
-    const { page = 1, limit = 10, search, includeDeleted = false, } = options ?? {};
-    const skip = (page - 1) * limit;
-    const where = {
-        role: { name: 'USER' },
-    };
-    if (!includeDeleted) {
-        where.deletedAt = null;
-    }
-    if (search) {
-        where.OR = [
-            { name: { contains: search, mode: 'insensitive' } },
-            { email: { contains: search, mode: 'insensitive' } },
-        ];
-    }
-    const [users, total] = await Promise.all([
-        prisma.user.findMany({
-            where,
-            skip,
-            take: limit,
-            select: {
-                id: true,
-                name: true,
-                email: true,
-                phone: true,
-                address: true,
-                roleId: true,
-                role: true,
-                permissions: true,
-                isVerified: true,
-                isBiometricsEnabled: true,
-                profileUrl: true,
-                createdAt: true,
-                updatedAt: true,
-                lastLogin: true,
-                deletedAt: true,
-                deletionReason: true,
-                _count: {
-                    select: {
-                        bookings: true,
-                    },
-                },
-            },
-            orderBy: { createdAt: 'desc' },
-        }),
-        prisma.user.count({ where }),
-    ]);
-    // Add permissions to each user
-    const usersWithPermissions = await Promise.all(users.map(async (user) => ({
-        id: user.id,
+const emptyPagination = (page) => ({
+    currentPage: page,
+    totalPages: 0,
+    totalUsers: 0,
+    hasNext: false,
+    hasPrev: false,
+});
+const buildUserPayload = async (user) => {
+    const uid = user._id.toString();
+    const bookingsCount = await Booking.countDocuments({ userId: user._id });
+    return {
+        id: uid,
         name: user.name,
         email: user.email,
         phone: user.phone,
         address: user.address,
-        role: user.role.name,
-        roleId: user.roleId,
-        permissions: await getPermissionsAsStrings(user.id),
+        role: user.roleId?.name ?? 'USER',
+        roleId: user.roleId?._id?.toString() ?? '',
+        permissions: await getPermissionsAsStrings(uid),
         customPermissions: user.permissions,
         isVerified: user.isVerified,
         isBiometricsEnabled: user.isBiometricsEnabled,
@@ -67,8 +31,29 @@ export const getCustomersService = async (options) => {
         lastLogin: user.lastLogin,
         deletedAt: user.deletedAt,
         deletionReason: user.deletionReason,
-        bookingsCount: user._count.bookings,
-    })));
+        bookingsCount,
+    };
+};
+export const getCustomersService = async (options) => {
+    const { page = 1, limit = 10, search, includeDeleted = false } = options ?? {};
+    const skip = (page - 1) * limit;
+    const userRole = await Role.findOne({ name: 'USER' });
+    if (!userRole)
+        return { users: [], pagination: emptyPagination(page) };
+    const query = { roleId: userRole._id };
+    if (!includeDeleted)
+        query.deletedAt = null;
+    if (search) {
+        query.$or = [
+            { name: { $regex: search, $options: 'i' } },
+            { email: { $regex: search, $options: 'i' } },
+        ];
+    }
+    const [users, total] = await Promise.all([
+        User.find(query).populate('roleId').sort({ createdAt: -1 }).skip(skip).limit(limit),
+        User.countDocuments(query),
+    ]);
+    const usersWithPermissions = await Promise.all(users.map(buildUserPayload));
     return {
         users: usersWithPermissions,
         pagination: {
@@ -81,73 +66,25 @@ export const getCustomersService = async (options) => {
     };
 };
 export const getStaffsService = async (options) => {
-    const { page = 1, limit = 10, search, includeDeleted = false, } = options ?? {};
+    const { page = 1, limit = 10, search, includeDeleted = false } = options ?? {};
     const skip = (page - 1) * limit;
-    const where = {
-        role: { name: 'STAFF' },
-    };
-    if (!includeDeleted) {
-        where.deletedAt = null;
-    }
+    const staffRole = await Role.findOne({ name: 'STAFF' });
+    if (!staffRole)
+        return { users: [], pagination: emptyPagination(page) };
+    const query = { roleId: staffRole._id };
+    if (!includeDeleted)
+        query.deletedAt = null;
     if (search) {
-        where.OR = [
-            { name: { contains: search, mode: 'insensitive' } },
-            { email: { contains: search, mode: 'insensitive' } },
+        query.$or = [
+            { name: { $regex: search, $options: 'i' } },
+            { email: { $regex: search, $options: 'i' } },
         ];
     }
     const [users, total] = await Promise.all([
-        prisma.user.findMany({
-            where,
-            skip,
-            take: limit,
-            select: {
-                id: true,
-                name: true,
-                email: true,
-                phone: true,
-                address: true,
-                roleId: true,
-                role: true,
-                permissions: true,
-                isVerified: true,
-                isBiometricsEnabled: true,
-                profileUrl: true,
-                createdAt: true,
-                updatedAt: true,
-                lastLogin: true,
-                deletedAt: true,
-                deletionReason: true,
-                _count: {
-                    select: {
-                        bookings: true,
-                    },
-                },
-            },
-            orderBy: { createdAt: 'desc' },
-        }),
-        prisma.user.count({ where }),
+        User.find(query).populate('roleId').sort({ createdAt: -1 }).skip(skip).limit(limit),
+        User.countDocuments(query),
     ]);
-    // Add permissions to each user
-    const usersWithPermissions = await Promise.all(users.map(async (user) => ({
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        address: user.address,
-        role: user.role.name,
-        roleId: user.roleId,
-        permissions: await getPermissionsAsStrings(user.id),
-        customPermissions: user.permissions,
-        isVerified: user.isVerified,
-        isBiometricsEnabled: user.isBiometricsEnabled,
-        profileUrl: user.profileUrl,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-        lastLogin: user.lastLogin,
-        deletedAt: user.deletedAt,
-        deletionReason: user.deletionReason,
-        bookingsCount: user._count.bookings,
-    })));
+    const usersWithPermissions = await Promise.all(users.map(buildUserPayload));
     return {
         users: usersWithPermissions,
         pagination: {
@@ -160,48 +97,30 @@ export const getStaffsService = async (options) => {
     };
 };
 export const updateUserRoleService = async (userId, newRoleName) => {
-    const existingUser = await prisma.user.findUnique({
-        where: { id: userId },
-        include: { role: true },
-    });
-    if (!existingUser) {
+    const existingUser = await User.findById(userId).populate('roleId');
+    if (!existingUser)
         throw new Error('User not found');
-    }
-    if (existingUser.role.name === newRoleName) {
+    if (existingUser.roleId?.name === newRoleName) {
         throw new Error(`User already has the role: ${newRoleName}`);
     }
-    // Find the target role
-    const targetRole = await prisma.role.findFirst({
-        where: { name: newRoleName, isActive: true },
-    });
-    if (!targetRole) {
+    const targetRole = await Role.findOne({ name: newRoleName, isActive: true });
+    if (!targetRole)
         throw new Error(`Role ${newRoleName} not found`);
-    }
-    const updatedUser = await prisma.user.update({
-        where: { id: userId },
-        data: {
-            roleId: targetRole.id,
-            updatedAt: new Date(),
-        },
-        include: { role: true },
-    });
-    return updatedUser;
+    return User.findByIdAndUpdate(userId, { roleId: targetRole._id }, { new: true }).populate('roleId');
 };
 export const getUserStatsService = async () => {
+    const [userRole, adminRole] = await Promise.all([
+        Role.findOne({ name: 'USER' }),
+        Role.findOne({ name: 'ADMIN' }),
+    ]);
     const [totalUsers, totalAdmins, verifiedUsers, deletedUsers, recentUsers] = await Promise.all([
-        prisma.user.count({ where: { role: { name: 'USER' }, deletedAt: null } }),
-        prisma.user.count({
-            where: { role: { name: 'ADMIN' }, deletedAt: null },
-        }),
-        prisma.user.count({ where: { isVerified: true, deletedAt: null } }),
-        prisma.user.count({ where: { deletedAt: { not: null } } }),
-        prisma.user.count({
-            where: {
-                createdAt: {
-                    gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-                },
-                deletedAt: null,
-            },
+        userRole ? User.countDocuments({ roleId: userRole._id, deletedAt: null }) : 0,
+        adminRole ? User.countDocuments({ roleId: adminRole._id, deletedAt: null }) : 0,
+        User.countDocuments({ isVerified: true, deletedAt: null }),
+        User.countDocuments({ deletedAt: { $ne: null } }),
+        User.countDocuments({
+            createdAt: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
+            deletedAt: null,
         }),
     ]);
     return {
@@ -214,20 +133,17 @@ export const getUserStatsService = async () => {
     };
 };
 export const getCurrentUserService = async (userId) => {
-    const user = await prisma.user.findUnique({
-        where: { id: userId },
-        include: { role: true },
-    });
-    if (!user) {
+    const user = await User.findById(userId).populate('roleId');
+    if (!user)
         throw new Error('User not found');
-    }
+    const uid = user._id.toString();
     return {
-        id: user.id,
+        id: uid,
         name: user.name,
         email: user.email,
-        role: user.role.name,
-        roleId: user.roleId,
-        permissions: await getPermissionsAsStrings(user.id),
+        role: user.roleId?.name ?? 'USER',
+        roleId: user.roleId?._id?.toString() ?? '',
+        permissions: await getPermissionsAsStrings(uid),
         phone: user.phone ?? undefined,
         address: user.address ?? undefined,
         profileUrl: user.profileUrl ?? undefined,
@@ -241,14 +157,8 @@ export const getCurrentUserService = async (userId) => {
     };
 };
 export const updateProfileDetailsService = async (userId, data) => {
-    return await prisma.user.update({
-        where: { id: userId },
-        data,
-    });
+    return User.findByIdAndUpdate(userId, data, { new: true });
 };
 export const updateProfilePictureService = async (userId, profileUrl) => {
-    return await prisma.user.update({
-        where: { id: userId },
-        data: { profileUrl },
-    });
+    return User.findByIdAndUpdate(userId, { profileUrl }, { new: true });
 };

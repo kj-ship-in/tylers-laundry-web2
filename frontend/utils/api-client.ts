@@ -112,11 +112,11 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
  */
 export class RoleManager {
   private static currentRole: UserRole | null = null;
-  private static currentUserId: number | null = null;
+  private static currentUserId: string | null = null;
   private static currentPermissions: Permission[] = [];
 
   static setUserInfo(user: {
-    id: number;
+    id: string;
     role: UserRole;
     permissions?: Permission[];
   }) {
@@ -144,7 +144,7 @@ export class RoleManager {
     return this.currentRole;
   }
 
-  static getCurrentUserId(): number | null {
+  static getCurrentUserId(): string | null {
     return this.currentUserId;
   }
 
@@ -516,7 +516,10 @@ class ApiClient {
           if (this.isTokenExpired(token) || this.isTokenExpiringSoon(token)) {
             try {
               token = await this.refreshToken();
+              // Unblock any requests that queued while this refresh was in flight
+              this.requestQueue.processAll(null, token);
             } catch (error) {
+              this.requestQueue.processAll(error, null);
               console.error('Failed to refresh token:', error);
             }
           }
@@ -593,7 +596,6 @@ class ApiClient {
           }
 
           originalRequest._retry = true;
-          this.isRefreshing = true;
 
           try {
             const newToken = await this.refreshToken();
@@ -1008,7 +1010,7 @@ class ApiClient {
 
     if (response.data) {
       RoleManager.setUserInfo({
-        id: response.data.id,
+        id: response.data._id,
         role: response.data.role as UserRole,
         permissions: response.data.permissions as Permission[],
       });
@@ -1018,12 +1020,12 @@ class ApiClient {
   }
 
   getCurrentUserInfo(): {
-    id: number | null;
+    _id: string | null;
     role: UserRole | null;
     permissions: string[];
   } {
     return {
-      id: RoleManager.getCurrentUserId(),
+      _id: RoleManager.getCurrentUserId(),
       role: RoleManager.getCurrentRole(),
       permissions: RoleManager.getCurrentPermissions(),
     };

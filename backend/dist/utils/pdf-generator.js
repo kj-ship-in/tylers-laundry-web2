@@ -62,6 +62,34 @@ const PDFGenerator = {
         await page.close();
         return pdf;
     },
+    async generateReceiptsReportPDF(receiptsData, filters) {
+        try {
+            console.log('🔍 PDF Generator: generateReceiptsReportPDF called with', receiptsData.length, 'receipts');
+            const browser = await this.initBrowser();
+            const page = await browser.newPage();
+            const html = this.generateReceiptsReportHTML(receiptsData, filters);
+            console.log('🔍 PDF Generator: Generated HTML length:', html.length);
+            console.log('🔍 PDF Generator: HTML preview:', html.substring(0, 500) + '...');
+            await page.setContent(html, { waitUntil: 'networkidle0' });
+            const pdf = await page.pdf({
+                format: 'A4',
+                printBackground: true,
+                margin: {
+                    top: '20px',
+                    right: '20px',
+                    bottom: '20px',
+                    left: '20px',
+                },
+                landscape: true, // Landscape for better table display
+            });
+            await page.close();
+            return pdf;
+        }
+        catch (error) {
+            console.error('Error generating receipts report PDF:', error);
+            throw error;
+        }
+    },
     generateReceiptHTML(receiptData) {
         console.log('PDF Generator received receiptData:', JSON.stringify(receiptData, null, 2));
         // receiptData is now the flattened object with direct properties
@@ -118,7 +146,7 @@ const PDFGenerator = {
           }
           .header {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
             border-bottom: 2px solid #4A90E2;
             padding-bottom: 20px;
           }
@@ -156,14 +184,14 @@ const PDFGenerator = {
           }
           .amount-section {
             background: #f8f9fa;
-            padding: 20px;
+            padding: 16px;
             border-radius: 8px;
-            margin: 20px 0;
+            margin: 16px 0;
           }
           .amount-row {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 10px;
+            margin-bottom: 6px;
           }
           .total-amount {
             font-size: 18px;
@@ -175,7 +203,7 @@ const PDFGenerator = {
           }
           .footer {
             text-align: center;
-            margin-top: 40px;
+            margin-top: 20px;
             padding-top: 20px;
             border-top: 1px solid #eee;
             color: #666;
@@ -694,6 +722,196 @@ const PDFGenerator = {
       </body>
       </html>
     `;
+    },
+    generateReceiptsReportHTML(receiptsData, filters) {
+        console.log('🔍 PDF Generator: generateReceiptsReportHTML called with', receiptsData.length, 'receipts');
+        if (receiptsData.length === 0) {
+            console.log('🔍 PDF Generator: No receipts data provided');
+        }
+        else {
+            console.log('🔍 PDF Generator: First receipt sample:', {
+                receiptNo: receiptsData[0].receiptNo,
+                user: receiptsData[0].user?.name,
+                service: receiptsData[0].service?.title,
+                payment: receiptsData[0].payment?.amount,
+            });
+        }
+        const reportTitle = 'Receipts Report';
+        const generatedAt = new Date().toLocaleString();
+        const filterInfo = this.buildFilterInfo(filters);
+        // Calculate totals
+        const totalAmount = receiptsData.reduce((sum, receipt) => {
+            const amount = receipt.payment?.amount ?? 0;
+            return (sum + (typeof amount === 'string' ? parseFloat(amount) : Number(amount)));
+        }, 0);
+        return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <title>${reportTitle}</title>
+        <style>
+          body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+            line-height: 1.4;
+            font-size: 12px;
+          }
+          .header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #4A90E2;
+            padding-bottom: 15px;
+          }
+          .report-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #4A90E2;
+            margin-bottom: 5px;
+          }
+          .report-info {
+            color: #666;
+            margin: 3px 0;
+          }
+          .filters {
+            color: #666;
+            font-style: italic;
+            margin-top: 10px;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 11px;
+          }
+          th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+            vertical-align: top;
+          }
+          th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            color: #4A90E2;
+          }
+          tr:nth-child(even) {
+            background-color: #f8f9fa;
+          }
+          tr:hover {
+            background-color: #e3f2fd;
+          }
+          .amount {
+            text-align: right;
+            font-weight: bold;
+          }
+          .total-row {
+            background-color: #4A90E2 !important;
+            color: white;
+            font-weight: bold;
+          }
+          .total-row td {
+            border-color: #4A90E2;
+          }
+          .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+            color: #666;
+            font-size: 10px;
+          }
+          .status {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+          }
+          .status.completed {
+            background: #d4edda;
+            color: #155724;
+          }
+          .status.pending {
+            background: #fff3cd;
+            color: #856404;
+          }
+          .status.cancelled {
+            background: #f8d7da;
+            color: #721c24;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="report-title">${reportTitle}</div>
+          <div class="report-info">Generated on: ${generatedAt}</div>
+          <div class="filters">${filterInfo}</div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Receipt No</th>
+              <th>Issue Date</th>
+              <th>Customer</th>
+              <th>Service</th>
+              <th>Amount</th>
+              <th>Method</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${receiptsData
+            .map(receipt => {
+            const user = receipt.user;
+            const service = receipt.service;
+            const payment = receipt.payment;
+            const rowHtml = `
+                <tr>
+                  <td>${receipt.receiptNo ?? 'N/A'}</td>
+                  <td>${receipt.issuedAt ? new Date(receipt.issuedAt).toLocaleDateString() : 'N/A'}</td>
+                  <td>${user?.name ?? 'N/A'}</td>
+                  <td>${service?.title ?? 'N/A'}</td>
+                  <td class="amount">GMD${payment?.amount ? Number(payment.amount).toFixed(2) : '0.00'}</td>
+                  <td>${payment?.method ?? 'N/A'}</td>
+                  <td><span class="status completed">${payment?.status ?? 'N/A'}</span></td>
+                </tr>
+              `;
+            console.log('🔍 PDF Generator: Generated row HTML:', rowHtml.trim());
+            return rowHtml;
+        })
+            .join('')}
+            <tr class="total-row">
+              <td colspan="4" style="text-align: right; font-weight: bold;">TOTAL:</td>
+              <td class="amount">GMD${totalAmount.toFixed(2)}</td>
+              <td colspan="2"></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="footer">
+          <p>Total Receipts: ${receiptsData.length}</p>
+          <p>Report generated by Tyler's Laundry API</p>
+        </div>
+      </body>
+      </html>
+    `;
+    },
+    buildFilterInfo(filters) {
+        const parts = [];
+        if (filters.startDate && filters.endDate) {
+            parts.push(`Date Range: ${filters.startDate} to ${filters.endDate}`);
+        }
+        if (filters.status) {
+            parts.push(`Status: ${filters.status}`);
+        }
+        return parts.length > 0
+            ? `Filters: ${parts.join(', ')}`
+            : 'No filters applied';
     },
 };
 export default PDFGenerator;

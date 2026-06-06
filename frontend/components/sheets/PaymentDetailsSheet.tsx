@@ -32,9 +32,9 @@ interface PaymentDetailsSheetProps {
   isOpen: boolean;
   onClose: () => void;
   payment: PaymentResponse | null;
-  onDelete?: (paymentId: number) => void;
-  onProcess?: (paymentId: number) => void;
-  onRefund?: (paymentId: number, reason?: string) => void;
+  onDelete?: (paymentId: string) => void;
+  onProcess?: (paymentId: string) => void;
+  onRefund?: (paymentId: string, reason?: string) => void;
 }
 
 const PaymentDetailsSheet: React.FC<PaymentDetailsSheetProps> = ({

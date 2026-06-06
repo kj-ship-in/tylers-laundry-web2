@@ -29,18 +29,21 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   Camera,
   User as UserIcon,
   Lock,
   Trash2,
   Upload,
-  Mail,
-  Phone,
-  MapPin,
   Settings as SettingsIcon,
-  Building,
-  Bell,
-  Shield,
+  Clock,
+  Star,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -61,20 +64,31 @@ import {
   deleteCustomerSchema,
 } from '@/utils/schemas/user-settings.schema';
 import LoadingSpinnerSmall from '@/components/loadings/loading-spinner-small';
-import {
-  ProfileOverviewSkeleton,
-  ProfileFormSkeleton,
-  PasswordFormSkeleton,
-  PictureUploadSkeleton,
-  SettingsPageSkeleton,
-} from '@/components/loadings/settings-skeletons';
-import type { User } from '@/types/user';
+import { SettingsPageSkeleton } from '@/components/loadings/settings-skeletons';
 import { Badge } from '@/components/ui/badge';
 import TextareaField from '@/components/form/textarea-field';
 import TextInputField from '@/components/form/text-input-field';
-import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
+import { Separator } from '@/components/ui/separator';
+import { Checkbox } from '@/components/ui/checkbox';
+
+type BusinessHour = {
+  day: string;
+  open: string;
+  close: string;
+  closed: boolean;
+};
+
+const DEFAULT_BUSINESS_HOURS: BusinessHour[] = [
+  { day: 'Monday', open: '07:00', close: '20:00', closed: false },
+  { day: 'Tuesday', open: '07:00', close: '20:00', closed: false },
+  { day: 'Wednesday', open: '07:00', close: '20:00', closed: false },
+  { day: 'Thursday', open: '07:00', close: '20:00', closed: false },
+  { day: 'Friday', open: '07:00', close: '20:00', closed: false },
+  { day: 'Saturday', open: '08:00', close: '18:00', closed: false },
+  { day: 'Sunday', open: '09:00', close: '17:00', closed: false },
+];
 
 const AdminSettingsPage = () => {
   const { data: session, update } = useSession();
@@ -90,12 +104,7 @@ const AdminSettingsPage = () => {
 
   const profileForm = useForm<UpdateProfileFormValues>({
     resolver: zodResolver(updateProfileSchema),
-    defaultValues: {
-      name: '',
-      email: '',
-      phone: '',
-      address: '',
-    },
+    defaultValues: { name: '', email: '', phone: '', address: '' },
   });
 
   const passwordForm = useForm<ChangePasswordFormValues>({
@@ -109,25 +118,25 @@ const AdminSettingsPage = () => {
 
   const deleteForm = useForm<DeleteCustomerFormValues>({
     resolver: zodResolver(deleteCustomerSchema),
-    defaultValues: {
-      currentPassword: '',
-      deletionReason: '',
-    },
+    defaultValues: { currentPassword: '', deletionReason: '' },
   });
 
-  // System settings state
   const [systemSettings, setSystemSettings] = useState({
     emailNotifications: true,
     smsNotifications: false,
     maintenanceMode: false,
     allowNewRegistrations: true,
+    minReviewRating: 4,
     businessName: "Tyler's Laundry",
     businessEmail: 'admin@tylerslaundry.com',
     businessPhone: '+1 (555) 123-4567',
     businessAddress: '123 Laundry Street, Clean City, CC 12345',
   });
 
-  // Reset profile form when user data loads
+  const [businessHours, setBusinessHours] = useState<BusinessHour[]>(
+    DEFAULT_BUSINESS_HOURS,
+  );
+
   useEffect(() => {
     if (currentUser) {
       profileForm.reset({
@@ -142,7 +151,7 @@ const AdminSettingsPage = () => {
   const onProfileSubmit = async (values: UpdateProfileFormValues) => {
     try {
       await updateProfileMutation.mutateAsync(values);
-      await update(); // Update the session
+      await update();
       toast.success('Profile updated successfully!');
       profileForm.reset(values);
     } catch (error: any) {
@@ -164,17 +173,15 @@ const AdminSettingsPage = () => {
     const file = event.target.files?.[0];
     if (file) {
       setSelectedFile(file);
-      const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
+      setPreviewUrl(URL.createObjectURL(file));
     }
   };
 
   const handlePictureUpload = async () => {
     if (!selectedFile) return;
-
     try {
       await uploadPictureMutation.mutateAsync(selectedFile);
-      await update(); // Update the session
+      await update();
       toast.success('Profile picture updated successfully!');
       setSelectedFile(null);
       setPreviewUrl(null);
@@ -193,20 +200,33 @@ const AdminSettingsPage = () => {
     }
   };
 
-  const handleSystemSettingsChange = (key: string, value: any) => {
-    setSystemSettings(prev => ({
-      ...prev,
-      [key]: value,
-    }));
-    toast.success('System setting updated');
+  const handleSystemSettingChange = (key: string, value: any) => {
+    setSystemSettings(prev => ({ ...prev, [key]: value }));
   };
 
-  if (isLoadingUser) {
-    return <SettingsPageSkeleton />;
-  }
+  const updateBusinessHour = (
+    index: number,
+    field: keyof BusinessHour,
+    value: string | boolean,
+  ) => {
+    setBusinessHours(prev =>
+      prev.map((h, i) => (i === index ? { ...h, [field]: value } : h)),
+    );
+  };
+
+  const handleSaveBusinessInfo = () => {
+    // TODO: persist to backend
+    toast.success('Business information saved!');
+  };
+
+  const handleSaveSystemPreferences = () => {
+    // TODO: persist to backend
+    toast.success('System preferences saved!');
+  };
+
+  if (isLoadingUser) return <SettingsPageSkeleton />;
 
   const user = currentUser ?? (session?.user as any);
-
   const userProfile = user.profileUrl
     ? `/api/images${user.profileUrl}`
     : undefined;
@@ -247,6 +267,7 @@ const AdminSettingsPage = () => {
           </TabsTrigger>
         </TabsList>
 
+        {/* ── Profile ── */}
         <TabsContent value='profile'>
           <Card>
             <CardHeader>
@@ -256,7 +277,6 @@ const AdminSettingsPage = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {/* Profile Overview Section */}
               <div className='mb-8 p-6 bg-gray-50 rounded-lg'>
                 <div className='flex items-center gap-6'>
                   <Avatar className='w-20 h-20'>
@@ -271,7 +291,6 @@ const AdminSettingsPage = () => {
                         .join('') ?? 'A'}
                     </AvatarFallback>
                   </Avatar>
-
                   <div className='flex-1'>
                     <h3 className='text-xl font-semibold text-gray-900'>
                       {user?.name ?? 'Admin User'}
@@ -292,7 +311,6 @@ const AdminSettingsPage = () => {
                 </div>
               </div>
 
-              {/* Profile Form */}
               <form
                 onSubmit={profileForm.handleSubmit(onProfileSubmit)}
                 className='space-y-6'
@@ -305,7 +323,6 @@ const AdminSettingsPage = () => {
                     placeholder='Enter your full name'
                     error={profileForm.formState.errors.name?.message}
                   />
-
                   <TextInputField
                     control={profileForm.control}
                     name='email'
@@ -314,7 +331,6 @@ const AdminSettingsPage = () => {
                     placeholder='Enter your email'
                     error={profileForm.formState.errors.email?.message}
                   />
-
                   <TextInputField
                     control={profileForm.control}
                     name='phone'
@@ -322,7 +338,6 @@ const AdminSettingsPage = () => {
                     placeholder='Enter your phone number'
                     error={profileForm.formState.errors.phone?.message}
                   />
-
                   <TextInputField
                     control={profileForm.control}
                     name='address'
@@ -331,7 +346,6 @@ const AdminSettingsPage = () => {
                     error={profileForm.formState.errors.address?.message}
                   />
                 </div>
-
                 <Button
                   type='submit'
                   disabled={updateProfileMutation.isPending}
@@ -339,8 +353,7 @@ const AdminSettingsPage = () => {
                 >
                   {updateProfileMutation.isPending ? (
                     <>
-                      <LoadingSpinnerSmall />
-                      Updating...
+                      <LoadingSpinnerSmall /> Updating...
                     </>
                   ) : (
                     'Update Profile'
@@ -351,6 +364,7 @@ const AdminSettingsPage = () => {
           </Card>
         </TabsContent>
 
+        {/* ── Password ── */}
         <TabsContent value='password'>
           <Card>
             <CardHeader>
@@ -372,7 +386,6 @@ const AdminSettingsPage = () => {
                   placeholder='Enter current password'
                   error={passwordForm.formState.errors.currentPassword?.message}
                 />
-
                 <TextInputField
                   control={passwordForm.control}
                   name='newPassword'
@@ -381,7 +394,6 @@ const AdminSettingsPage = () => {
                   placeholder='Enter new password'
                   error={passwordForm.formState.errors.newPassword?.message}
                 />
-
                 <TextInputField
                   control={passwordForm.control}
                   name='confirmPassword'
@@ -390,7 +402,6 @@ const AdminSettingsPage = () => {
                   placeholder='Confirm new password'
                   error={passwordForm.formState.errors.confirmPassword?.message}
                 />
-
                 <Button
                   type='submit'
                   disabled={changePasswordMutation.isPending}
@@ -398,8 +409,7 @@ const AdminSettingsPage = () => {
                 >
                   {changePasswordMutation.isPending ? (
                     <>
-                      <LoadingSpinnerSmall />
-                      Changing...
+                      <LoadingSpinnerSmall /> Changing...
                     </>
                   ) : (
                     'Change Password'
@@ -410,6 +420,7 @@ const AdminSettingsPage = () => {
           </Card>
         </TabsContent>
 
+        {/* ── Picture ── */}
         <TabsContent value='picture'>
           <Card>
             <CardHeader>
@@ -433,7 +444,6 @@ const AdminSettingsPage = () => {
                         .join('') ?? 'U'}
                     </AvatarFallback>
                   </Avatar>
-
                   <div className='space-y-4'>
                     <div>
                       <Label
@@ -458,7 +468,6 @@ const AdminSettingsPage = () => {
                         </p>
                       )}
                     </div>
-
                     <Button
                       onClick={handlePictureUpload}
                       disabled={
@@ -477,7 +486,6 @@ const AdminSettingsPage = () => {
                     </Button>
                   </div>
                 </div>
-
                 <Alert>
                   <AlertDescription>
                     Supported formats: JPG, PNG, GIF. Maximum file size: 5MB.
@@ -488,23 +496,27 @@ const AdminSettingsPage = () => {
           </Card>
         </TabsContent>
 
+        {/* ── System ── */}
         <TabsContent value='system'>
           <div className='space-y-6'>
+            {/* Business Information */}
             <Card>
               <CardHeader>
                 <CardTitle>Business Information</CardTitle>
                 <CardDescription>
-                  Update your business details and contact information
+                  Update your business details, contact information, and
+                  operating hours
                 </CardDescription>
               </CardHeader>
-              <CardContent className='space-y-4'>
+              <CardContent className='space-y-6'>
+                {/* Contact details */}
                 <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
                   <TextInputField
                     label='Business Name'
                     name='businessName'
                     value={systemSettings.businessName}
-                    onChange={e =>
-                      handleSystemSettingsChange('businessName', e.target.value)
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      handleSystemSettingChange('businessName', e.target.value)
                     }
                   />
                   <TextInputField
@@ -512,22 +524,16 @@ const AdminSettingsPage = () => {
                     name='businessEmail'
                     type='email'
                     value={systemSettings.businessEmail}
-                    onChange={e =>
-                      handleSystemSettingsChange(
-                        'businessEmail',
-                        e.target.value,
-                      )
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      handleSystemSettingChange('businessEmail', e.target.value)
                     }
                   />
                   <TextInputField
                     label='Business Phone'
                     name='businessPhone'
                     value={systemSettings.businessPhone}
-                    onChange={e =>
-                      handleSystemSettingsChange(
-                        'businessPhone',
-                        e.target.value,
-                      )
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      handleSystemSettingChange('businessPhone', e.target.value)
                     }
                   />
                 </div>
@@ -535,21 +541,105 @@ const AdminSettingsPage = () => {
                   label='Business Address'
                   value={systemSettings.businessAddress}
                   onChange={e =>
-                    handleSystemSettingsChange(
-                      'businessAddress',
-                      e.target.value,
-                    )
+                    handleSystemSettingChange('businessAddress', e.target.value)
                   }
                   rows={3}
                 />
+
+                <Separator />
+
+                {/* Business Hours */}
+                <div>
+                  <div className='flex items-center gap-2 mb-4'>
+                    <Clock className='w-4 h-4 text-gray-500' />
+                    <h3 className='font-semibold text-gray-900'>
+                      Business Hours
+                    </h3>
+                    <span className='text-xs text-gray-400'>
+                      — shown in the footer on the public site
+                    </span>
+                  </div>
+
+                  <div className='space-y-2'>
+                    {/* Header row */}
+                    <div className='grid grid-cols-[120px_1fr_1fr_80px] gap-3 px-3 pb-1'>
+                      <span className='text-xs font-medium text-gray-500 uppercase tracking-wide'>
+                        Day
+                      </span>
+                      <span className='text-xs font-medium text-gray-500 uppercase tracking-wide'>
+                        Opens
+                      </span>
+                      <span className='text-xs font-medium text-gray-500 uppercase tracking-wide'>
+                        Closes
+                      </span>
+                      <span className='text-xs font-medium text-gray-500 uppercase tracking-wide text-center'>
+                        Closed
+                      </span>
+                    </div>
+
+                    {businessHours.map((row, i) => (
+                      <div
+                        key={row.day}
+                        className={`grid grid-cols-[120px_1fr_1fr_80px] gap-3 items-center px-3 py-2 rounded-lg transition-colors ${
+                          row.closed ? 'bg-gray-50' : 'hover:bg-gray-50'
+                        }`}
+                      >
+                        <span
+                          className={`text-sm font-medium ${
+                            row.closed ? 'text-gray-400' : 'text-gray-700'
+                          }`}
+                        >
+                          {row.day}
+                        </span>
+
+                        <Input
+                          type='time'
+                          value={row.open}
+                          disabled={row.closed}
+                          onChange={e =>
+                            updateBusinessHour(i, 'open', e.target.value)
+                          }
+                          className='h-9 text-sm disabled:opacity-40 disabled:cursor-not-allowed'
+                        />
+
+                        <Input
+                          type='time'
+                          value={row.close}
+                          disabled={row.closed}
+                          onChange={e =>
+                            updateBusinessHour(i, 'close', e.target.value)
+                          }
+                          className='h-9 text-sm disabled:opacity-40 disabled:cursor-not-allowed'
+                        />
+
+                        <div className='flex justify-center'>
+                          <Checkbox
+                            checked={row.closed}
+                            onCheckedChange={checked =>
+                              updateBusinessHour(i, 'closed', !!checked)
+                            }
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className='flex justify-end'>
+                  <Button onClick={handleSaveBusinessInfo}>
+                    Save Business Information
+                  </Button>
+                </div>
               </CardContent>
             </Card>
 
+            {/* System Preferences */}
             <Card>
               <CardHeader>
                 <CardTitle>System Preferences</CardTitle>
                 <CardDescription>
-                  Configure system-wide settings and notifications
+                  Configure notifications, access control, and review display
+                  settings
                 </CardDescription>
               </CardHeader>
               <CardContent className='space-y-6'>
@@ -563,10 +653,12 @@ const AdminSettingsPage = () => {
                   <Switch
                     checked={systemSettings.emailNotifications}
                     onCheckedChange={checked =>
-                      handleSystemSettingsChange('emailNotifications', checked)
+                      handleSystemSettingChange('emailNotifications', checked)
                     }
                   />
                 </div>
+
+                <Separator />
 
                 <div className='flex items-center justify-between'>
                   <div className='space-y-0.5'>
@@ -578,10 +670,12 @@ const AdminSettingsPage = () => {
                   <Switch
                     checked={systemSettings.smsNotifications}
                     onCheckedChange={checked =>
-                      handleSystemSettingsChange('smsNotifications', checked)
+                      handleSystemSettingChange('smsNotifications', checked)
                     }
                   />
                 </div>
+
+                <Separator />
 
                 <div className='flex items-center justify-between'>
                   <div className='space-y-0.5'>
@@ -593,10 +687,12 @@ const AdminSettingsPage = () => {
                   <Switch
                     checked={systemSettings.maintenanceMode}
                     onCheckedChange={checked =>
-                      handleSystemSettingsChange('maintenanceMode', checked)
+                      handleSystemSettingChange('maintenanceMode', checked)
                     }
                   />
                 </div>
+
+                <Separator />
 
                 <div className='flex items-center justify-between'>
                   <div className='space-y-0.5'>
@@ -608,18 +704,58 @@ const AdminSettingsPage = () => {
                   <Switch
                     checked={systemSettings.allowNewRegistrations}
                     onCheckedChange={checked =>
-                      handleSystemSettingsChange(
+                      handleSystemSettingChange(
                         'allowNewRegistrations',
                         checked,
                       )
                     }
                   />
                 </div>
+
+                <Separator />
+
+                {/* Minimum Review Rating */}
+                <div className='flex items-center justify-between'>
+                  <div className='space-y-0.5'>
+                    <div className='flex items-center gap-1.5'>
+                      <Label className='text-base'>Minimum Review Rating</Label>
+                      <Star className='w-4 h-4 text-yellow-400 fill-yellow-400' />
+                    </div>
+                    <p className='text-sm text-gray-600'>
+                      Only display reviews with this rating or higher on the
+                      public website
+                    </p>
+                  </div>
+                  <Select
+                    value={String(systemSettings.minReviewRating)}
+                    onValueChange={val =>
+                      handleSystemSettingChange('minReviewRating', Number(val))
+                    }
+                  >
+                    <SelectTrigger className='w-28'>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[1, 2, 3, 4, 5].map(n => (
+                        <SelectItem key={n} value={String(n)}>
+                          {n} {n === 1 ? 'star' : 'stars'}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className='flex justify-end pt-2'>
+                  <Button onClick={handleSaveSystemPreferences}>
+                    Save Preferences
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </div>
         </TabsContent>
 
+        {/* ── Danger Zone ── */}
         <TabsContent value='danger'>
           <Card className='border-red-200'>
             <CardHeader>
@@ -667,7 +803,6 @@ const AdminSettingsPage = () => {
                           deleteForm.formState.errors.currentPassword?.message
                         }
                       />
-
                       <TextareaField
                         label='Reason for Deletion (Optional)'
                         placeholder='Please tell us why you are deleting your account'
@@ -684,8 +819,7 @@ const AdminSettingsPage = () => {
                       >
                         {deleteAccountMutation.isPending ? (
                           <>
-                            <LoadingSpinnerSmall />
-                            Deleting...
+                            <LoadingSpinnerSmall /> Deleting...
                           </>
                         ) : (
                           'Delete Account'

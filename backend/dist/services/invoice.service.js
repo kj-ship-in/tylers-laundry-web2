@@ -1,325 +1,192 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import prisma from '../lib/prisma';
+import { Invoice } from '../models/invoice.model';
+import { Payment } from '../models/payment.model';
+import { InvoiceStatus } from '../types/enums';
 import ExcelReportGenerator from '../utils/excel-generator';
 import PDFGenerator from '../utils/pdf-generator';
+const invoicePopulate = [
+    {
+        path: 'paymentId',
+        populate: { path: 'bookingId', populate: [{ path: 'userId' }, { path: 'serviceId' }] },
+    },
+    'receipt',
+];
 const generateInvoiceNumber = async () => {
-    const lastInvoice = await prisma.invoice.findFirst({
-        orderBy: { id: 'desc' },
-        select: { invoiceNo: true },
-    });
+    const last = await Invoice.findOne().sort({ createdAt: -1 }).select('invoiceNo');
     let nextNumber = 1;
-    if (lastInvoice?.invoiceNo) {
-        const match = lastInvoice.invoiceNo.match(/INV-(\d+)/);
-        if (match) {
+    if (last?.invoiceNo) {
+        const match = last.invoiceNo.match(/INV-(\d+)/);
+        if (match)
             nextNumber = parseInt(match[1], 10) + 1;
-        }
     }
     return `INV-${nextNumber.toString().padStart(4, '0')}`;
 };
 export const createInvoice = async (data) => {
-    // Always generate invoice number automatically
     const invoiceNo = await generateInvoiceNumber();
-    const invoiceData = { ...data, invoiceNo };
-    return prisma.invoice.create({
-        data: invoiceData,
-        include: {
-            payment: {
-                include: {
-                    booking: {
-                        include: {
-                            user: true,
-                            service: true,
-                        },
-                    },
-                },
-            },
-            receipt: true,
-        },
-    });
+    const invoice = await Invoice.create({ ...data, invoiceNo });
+    return Invoice.findById(invoice._id).populate(invoicePopulate);
 };
 export const getAllInvoices = async (options) => {
-    const { page = 1, limit = 10, status, startDate, endDate, search, } = options ?? {};
+    const { page = 1, limit = 10, status, startDate, endDate, search } = options ?? {};
     const skip = (page - 1) * limit;
     const where = {};
-    if (status) {
+    if (status)
         where.status = status;
-    }
     if (startDate && endDate) {
-        where.issuedAt = {
-            gte: new Date(startDate),
-            lte: new Date(endDate),
-        };
+        where.issuedAt = { $gte: new Date(startDate), $lte: new Date(endDate) };
     }
     if (search) {
-        where.OR = [
-            { invoiceNo: { contains: search, mode: 'insensitive' } },
+        const matchingPayments = await Payment.aggregate([
             {
-                payment: {
-                    booking: {
-                        user: { name: { contains: search, mode: 'insensitive' } },
-                    },
+                $lookup: {
+                    from: 'bookings',
+                    localField: 'bookingId',
+                    foreignField: '_id',
+                    as: 'booking',
                 },
             },
+            { $unwind: '$booking' },
             {
-                payment: {
-                    booking: {
-                        user: { email: { contains: search, mode: 'insensitive' } },
-                    },
+                $lookup: {
+                    from: 'users',
+                    localField: 'booking.userId',
+                    foreignField: '_id',
+                    as: 'user',
                 },
             },
+            { $unwind: '$user' },
+            {
+                $match: {
+                    $or: [
+                        { 'user.name': { $regex: search, $options: 'i' } },
+                        { 'user.email': { $regex: search, $options: 'i' } },
+                    ],
+                },
+            },
+            { $project: { _id: 1 } },
+        ]);
+        const paymentIds = matchingPayments.map((p) => p._id);
+        where.$or = [
+            { invoiceNo: { $regex: search, $options: 'i' } },
+            { paymentId: { $in: paymentIds } },
         ];
     }
     const [invoices, total] = await Promise.all([
-        prisma.invoice.findMany({
-            where,
-            skip,
-            take: limit,
-            include: {
-                payment: {
-                    include: {
-                        booking: {
-                            include: {
-                                user: true,
-                                service: true,
-                            },
-                        },
-                    },
-                },
-                receipt: true,
-            },
-            orderBy: { createdAt: 'desc' },
-        }),
-        prisma.invoice.count({ where }),
+        Invoice.find(where)
+            .populate(invoicePopulate)
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit),
+        Invoice.countDocuments(where),
     ]);
     return {
         invoices,
-        pagination: {
-            page,
-            limit,
-            total,
-            pages: Math.ceil(total / limit),
-        },
+        pagination: { page, limit, total, pages: Math.ceil(total / limit) },
     };
 };
 export const getInvoiceById = async (id) => {
-    return prisma.invoice.findUnique({
-        where: { id },
-        include: {
-            payment: {
-                include: {
-                    booking: {
-                        include: {
-                            user: true,
-                            service: true,
-                        },
-                    },
-                },
-            },
-            receipt: true,
-        },
-    });
+    return Invoice.findById(id).populate(invoicePopulate);
 };
 export const updateInvoice = async (id, data) => {
-    return prisma.invoice.update({
-        where: { id },
-        data,
-        include: {
-            payment: {
-                include: {
-                    booking: {
-                        include: {
-                            user: true,
-                            service: true,
-                        },
-                    },
-                },
-            },
-            receipt: true,
-        },
-    });
+    return Invoice.findByIdAndUpdate(id, data, { new: true }).populate(invoicePopulate);
 };
 export const deleteInvoice = async (id) => {
-    return prisma.invoice.delete({ where: { id } });
+    return Invoice.findByIdAndDelete(id);
 };
 export const generateInvoicePDF = async (invoiceId) => {
     const invoice = await getInvoiceById(invoiceId);
-    if (!invoice) {
+    if (!invoice)
         throw new Error('Invoice not found');
-    }
     const invoiceData = {
         invoice,
-        payment: invoice.payment,
-        booking: invoice.payment?.booking,
-        user: invoice.payment?.booking?.user,
-        service: invoice.payment?.booking?.service,
+        payment: invoice.paymentId,
+        booking: invoice.paymentId?.bookingId,
+        user: invoice.paymentId?.bookingId?.userId,
+        service: invoice.paymentId?.bookingId?.serviceId,
     };
     const pdfBuffer = await PDFGenerator.generateInvoicePDF(invoiceData);
     const filename = `invoice-${invoice.invoiceNo}-${Date.now()}.pdf`;
     const filepath = await PDFGenerator.savePDFToFile(pdfBuffer, filename);
-    return {
-        pdfBuffer,
-        filepath,
-        filename,
-    };
+    return { pdfBuffer, filepath, filename };
 };
 export const generateInvoicesReport = async (filters) => {
-    const invoices = await prisma.invoice.findMany({
-        where: {
-            ...(filters.status && { status: filters.status }),
-            ...(filters.startDate &&
-                filters.endDate && {
-                issuedAt: {
-                    gte: new Date(filters.startDate),
-                    lte: new Date(filters.endDate),
-                },
-            }),
-        },
-        include: {
-            payment: {
-                include: {
-                    booking: {
-                        include: {
-                            user: true,
-                            service: true,
-                        },
-                    },
-                },
-            },
-            receipt: true,
-        },
-        orderBy: { createdAt: 'desc' },
-    });
+    const where = {};
+    if (filters.status)
+        where.status = filters.status;
+    if (filters.startDate && filters.endDate) {
+        where.issuedAt = { $gte: new Date(filters.startDate), $lte: new Date(filters.endDate) };
+    }
+    const invoices = await Invoice.find(where)
+        .populate(invoicePopulate)
+        .sort({ createdAt: -1 });
+    // Convert to plain objects so toJSON transforms run recursively:
+    // paymentId→payment, bookingId→booking, userId→user, serviceId→service
+    const plainInvoices = invoices.map(i => i.toJSON());
     if (filters.format === 'excel') {
-        const excelBuffer = await ExcelReportGenerator.generateInvoicesReport(invoices, filters);
+        const excelBuffer = await ExcelReportGenerator.generateInvoicesReport(plainInvoices, filters);
         const filename = `invoices-report-${Date.now()}.xlsx`;
         const filepath = await ExcelReportGenerator.saveExcelToFile(excelBuffer, filename);
-        return {
-            buffer: excelBuffer,
-            filepath,
-            filename,
-            format: 'excel',
-        };
+        return { buffer: excelBuffer, filepath, filename, format: 'excel' };
     }
-    else if (filters.format === 'pdf') {
-        const pdfBuffer = await PDFGenerator.generateInvoicesReportPDF(invoices, filters);
+    if (filters.format === 'pdf') {
+        const pdfBuffer = await PDFGenerator.generateInvoicesReportPDF(plainInvoices, filters);
         const filename = `invoices-report-${Date.now()}.pdf`;
         const filepath = await PDFGenerator.savePDFToFile(pdfBuffer, filename);
-        return {
-            buffer: pdfBuffer,
-            filepath,
-            filename,
-            format: 'pdf',
-        };
+        return { buffer: pdfBuffer, filepath, filename, format: 'pdf' };
     }
-    return {
-        data: invoices,
-        format: 'json',
-    };
+    return { data: plainInvoices, format: 'json' };
 };
 export const getOverdueInvoices = async (options) => {
     const { page = 1, limit = 10 } = options;
     const skip = (page - 1) * limit;
+    const where = { status: InvoiceStatus.UNPAID, dueDate: { $lt: new Date() } };
     const [invoices, total] = await Promise.all([
-        prisma.invoice.findMany({
-            where: {
-                status: 'UNPAID',
-                dueDate: {
-                    lt: new Date(),
-                },
-            },
-            include: {
-                payment: {
-                    include: {
-                        booking: {
-                            include: {
-                                user: true,
-                                service: true,
-                            },
-                        },
-                    },
-                },
-            },
-            skip,
-            take: limit,
-            orderBy: { dueDate: 'asc' },
-        }),
-        prisma.invoice.count({
-            where: {
-                status: 'UNPAID',
-                dueDate: {
-                    lt: new Date(),
-                },
-            },
-        }),
+        Invoice.find(where)
+            .populate(invoicePopulate)
+            .sort({ dueDate: 1 })
+            .skip(skip)
+            .limit(limit),
+        Invoice.countDocuments(where),
     ]);
-    return {
-        invoices,
-        pagination: {
-            page,
-            limit,
-            total,
-            pages: Math.ceil(total / limit),
-        },
-    };
+    return { invoices, pagination: { page, limit, total, pages: Math.ceil(total / limit) } };
 };
 export const getInvoiceStats = async () => {
-    const [totalInvoices, paidInvoices, unpaidInvoices, overdueInvoices, totalRevenue, unpaidAmount, monthlyRevenue,] = await Promise.all([
-        prisma.invoice.count(),
-        prisma.invoice.count({ where: { status: 'PAID' } }),
-        prisma.invoice.count({ where: { status: 'UNPAID' } }),
-        prisma.invoice.count({
-            where: {
-                status: 'UNPAID',
-                dueDate: { lt: new Date() },
-            },
-        }),
-        prisma.invoice.aggregate({
-            _sum: { totalAmount: true },
-            where: { status: 'PAID' },
-        }),
-        prisma.invoice.aggregate({
-            _sum: { totalAmount: true },
-            where: { status: 'UNPAID' },
-        }),
-        prisma.invoice.groupBy({
-            by: ['issuedAt'],
-            _sum: { totalAmount: true },
-            _count: { id: true },
-            where: {
-                status: 'PAID',
-                issuedAt: {
-                    gte: new Date(new Date().getFullYear(), new Date().getMonth() - 11, 1),
+    const [totalInvoices, paidInvoices, unpaidInvoices, overdueInvoices, revenueResults] = await Promise.all([
+        Invoice.countDocuments(),
+        Invoice.countDocuments({ status: InvoiceStatus.PAID }),
+        Invoice.countDocuments({ status: InvoiceStatus.UNPAID }),
+        Invoice.countDocuments({ status: InvoiceStatus.UNPAID, dueDate: { $lt: new Date() } }),
+        Invoice.aggregate([
+            {
+                $group: {
+                    _id: '$status',
+                    total: { $sum: '$totalAmount' },
                 },
             },
-            orderBy: { issuedAt: 'asc' },
-        }),
+        ]),
     ]);
-    return {
-        totalInvoices,
-        paidInvoices,
-        unpaidInvoices,
-        overdueInvoices,
-        totalRevenue: totalRevenue._sum.totalAmount ?? 0,
-        unpaidAmount: unpaidAmount._sum.totalAmount ?? 0,
-        monthlyRevenue,
-    };
+    const totalRevenue = revenueResults.find((r) => r._id === 'PAID')?.total ?? 0;
+    const unpaidAmount = revenueResults.find((r) => r._id === 'UNPAID')?.total ?? 0;
+    const twelveMonthsAgo = new Date(new Date().getFullYear(), new Date().getMonth() - 11, 1);
+    const monthlyRevenueRaw = await Invoice.aggregate([
+        { $match: { status: 'PAID', issuedAt: { $gte: twelveMonthsAgo } } },
+        {
+            $group: {
+                _id: { year: { $year: '$issuedAt' }, month: { $month: '$issuedAt' } },
+                totalAmount: { $sum: '$totalAmount' },
+                count: { $sum: 1 },
+            },
+        },
+        { $sort: { '_id.year': 1, '_id.month': 1 } },
+    ]);
+    const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const monthlyRevenue = monthlyRevenueRaw.map((m) => ({
+        month: `${MONTH_NAMES[m._id.month - 1]} ${m._id.year}`,
+        revenue: m.totalAmount,
+        count: m.count,
+    }));
+    return { totalInvoices, paidInvoices, unpaidInvoices, overdueInvoices, totalRevenue, unpaidAmount, monthlyRevenue };
 };
 export const markInvoiceAsPaid = async (invoiceId) => {
-    return prisma.invoice.update({
-        where: { id: invoiceId },
-        data: { status: 'PAID' },
-        include: {
-            payment: {
-                include: {
-                    booking: {
-                        include: {
-                            user: true,
-                            service: true,
-                        },
-                    },
-                },
-            },
-            receipt: true,
-        },
-    });
+    return Invoice.findByIdAndUpdate(invoiceId, { status: 'PAID' }, { new: true }).populate(invoicePopulate);
 };

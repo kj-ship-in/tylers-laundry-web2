@@ -46,11 +46,12 @@ export const authOptions: NextAuthOptions = {
           const refreshToken = data.refreshToken;
           const expiresIn = data.expiresIn ?? '15m';
 
-          // Check if we have required fields
-          if (user?._id && accessToken) {
+          // Check if we have required fields (backend returns id, not _id)
+          const userId = user?._id ?? user?.id;
+          if (userId && accessToken) {
             console.log('Login successful for user:', user.email);
             return {
-              id: user._id.toString(),
+              id: userId.toString(),
               name: user.name,
               email: user.email,
               accessToken: accessToken,

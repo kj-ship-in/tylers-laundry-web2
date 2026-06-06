@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Star, User } from 'lucide-react';
+import { appImages } from '@/constants/app-images';
 import { useAdminTestimonials, useTestimonials } from '@/hooks/useTestimonials';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import NoData from '@/components/no -data';
@@ -157,8 +158,12 @@ export function TestimonialsList({
                 <div className='flex items-start space-x-4'>
                   <Avatar className='w-10 h-10'>
                     <AvatarImage
-                      src={testimonial.user.profileUrl}
-                      alt={testimonial.user.name}
+                      src={
+                        testimonial.user?.profileUrl
+                          ? `/api/images${testimonial.user.profileUrl}`
+                          : appImages.profileImage.src
+                      }
+                      alt={testimonial.user?.name ?? 'User'}
                     />
                     <AvatarFallback>
                       <User className='w-4 h-4' />

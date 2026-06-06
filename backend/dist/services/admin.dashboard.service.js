@@ -1,39 +1,23 @@
-import prisma from '../lib/prisma';
-import { BookingStatus, PaymentStatus } from '../prisma/generated/prisma';
+/* eslint-disable no-console */
+import { Booking } from '../models/booking.model';
+import { Payment } from '../models/payment.model';
+import { Role } from '../models/role.model';
+import { User } from '../models/user.model';
+import { BookingStatus, PaymentStatus } from '../types/enums';
 export const getDashboardStats = async () => {
     try {
-        // Total Revenue (from paid payments)
-        const revenueResult = await prisma.payment.aggregate({
-            where: { status: PaymentStatus.PAID },
-            _sum: { amount: true },
-        });
-        const totalRevenue = revenueResult._sum.amount ?? 0;
-        // Active Bookings (PENDING or IN_PROGRESS)
-        const activeBookings = await prisma.booking.count({
-            where: {
-                status: {
-                    in: [BookingStatus.PENDING, BookingStatus.IN_PROGRESS],
-                },
-            },
-        });
-        // Total Customers (users with bookings)
-        const totalCustomers = await prisma.user.count({
-            where: {
-                bookings: {
-                    some: {},
-                },
-            },
-        });
-        // Pending Payments (payments not yet paid)
-        const pendingPayments = await prisma.payment.count({
-            where: { status: PaymentStatus.PENDING },
-        });
-        return {
-            totalRevenue: Number(totalRevenue),
-            activeBookings,
-            totalCustomers,
-            pendingPayments,
-        };
+        const [revenueResult, activeBookings, pendingPayments] = await Promise.all([
+            Payment.aggregate([
+                { $match: { status: PaymentStatus.PAID } },
+                { $group: { _id: null, total: { $sum: '$amount' } } },
+            ]),
+            Booking.countDocuments({ status: { $in: [BookingStatus.PENDING, BookingStatus.IN_PROGRESS] } }),
+            Payment.countDocuments({ status: PaymentStatus.PENDING }),
+        ]);
+        const totalRevenue = revenueResult[0]?.total ?? 0;
+        const usersWithBookings = await Booking.distinct('userId');
+        const totalCustomers = usersWithBookings.length;
+        return { totalRevenue: Number(totalRevenue), activeBookings, totalCustomers, pendingPayments };
     }
     catch (error) {
         console.error('Error fetching dashboard stats:', error);
@@ -42,35 +26,12 @@ export const getDashboardStats = async () => {
 };
 export const getRecentBookings = async (limit = 5) => {
     try {
-        return await prisma.booking.findMany({
-            take: limit,
-            orderBy: { createdAt: 'desc' },
-            include: {
-                user: {
-                    select: {
-                        id: true,
-                        name: true,
-                        email: true,
-                        phone: true,
-                    },
-                },
-                service: {
-                    select: {
-                        id: true,
-                        title: true,
-                        type: true,
-                        price: true,
-                    },
-                },
-                payments: {
-                    select: {
-                        status: true,
-                        amount: true,
-                        currency: true,
-                    },
-                },
-            },
-        });
+        return Booking.find()
+            .sort({ createdAt: -1 })
+            .limit(limit)
+            .populate({ path: 'userId', select: 'id name email phone' })
+            .populate({ path: 'serviceId', select: 'id title type price' })
+            .populate({ path: 'payments', select: 'status amount currency' });
     }
     catch (error) {
         console.error('Error fetching recent bookings:', error);
@@ -83,52 +44,26 @@ export const getDailyOverview = async () => {
         today.setHours(0, 0, 0, 0);
         const tomorrow = new Date(today);
         tomorrow.setDate(tomorrow.getDate() + 1);
-        // New bookings today
-        const newBookingsToday = await prisma.booking.count({
-            where: {
-                createdAt: {
-                    gte: today,
-                    lt: tomorrow,
-                },
-            },
-        });
-        // Completed bookings today
-        const completedToday = await prisma.booking.count({
-            where: {
+        const [newBookingsToday, completedToday, inProgressToday, revenueTodayResult] = await Promise.all([
+            Booking.countDocuments({ createdAt: { $gte: today, $lt: tomorrow } }),
+            Booking.countDocuments({
                 status: BookingStatus.COMPLETED,
-                updatedAt: {
-                    gte: today,
-                    lt: tomorrow,
-                },
-            },
-        });
-        // In progress bookings today
-        const inProgressToday = await prisma.booking.count({
-            where: {
+                updatedAt: { $gte: today, $lt: tomorrow },
+            }),
+            Booking.countDocuments({
                 status: BookingStatus.IN_PROGRESS,
-                updatedAt: {
-                    gte: today,
-                    lt: tomorrow,
-                },
-            },
-        });
-        // Revenue today
-        const revenueTodayResult = await prisma.payment.aggregate({
-            where: {
-                status: PaymentStatus.PAID,
-                createdAt: {
-                    gte: today,
-                    lt: tomorrow,
-                },
-            },
-            _sum: { amount: true },
-        });
-        const revenueToday = revenueTodayResult._sum.amount ?? 0;
+                updatedAt: { $gte: today, $lt: tomorrow },
+            }),
+            Payment.aggregate([
+                { $match: { status: PaymentStatus.PAID, createdAt: { $gte: today, $lt: tomorrow } } },
+                { $group: { _id: null, total: { $sum: '$amount' } } },
+            ]),
+        ]);
         return {
             newBookings: newBookingsToday,
             completedBookings: completedToday,
             inProgressBookings: inProgressToday,
-            revenueToday: Number(revenueToday),
+            revenueToday: Number(revenueTodayResult[0]?.total ?? 0),
         };
     }
     catch (error) {
@@ -136,3 +71,6 @@ export const getDailyOverview = async () => {
         throw new Error('Failed to fetch daily overview');
     }
 };
+// suppress unused import
+void Role;
+void User;

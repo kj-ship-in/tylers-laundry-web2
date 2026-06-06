@@ -126,8 +126,13 @@ export const getUserTestimonialsController = async (
       return res.status(401).json({ message: 'Unauthorized' });
     }
 
-    const testimonial = await Testimonial.findOne({ userId, isActive: true })
-      .populate({ path: 'userId', select: 'id name profileUrl' });
+    const raw = await Testimonial.findOne({ userId, isActive: true })
+      .populate({ path: 'userId', select: '_id name profileUrl' })
+      .lean();
+
+    const testimonial = raw
+      ? (() => { const { userId: u, ...rest } = raw as any; return { ...rest, user: u ?? null }; })()
+      : null;
 
     return res
       .set('Cache-Control', 'no-cache, no-store, must-revalidate')

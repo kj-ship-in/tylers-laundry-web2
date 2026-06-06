@@ -2,7 +2,7 @@ import express from 'express';
 import { getAllChartsController, getCustomerAnalyticsController, getCustomerAcquisitionController, getDailyBookingComparisonController, getFinancialReportController, getMonthlyTrendsController, getPaymentMethodDonutController, getRevenueLineChartController, getServicePerformanceController, getServiceRevenueDonutController, getStaffEfficiencyController, getStaffPerformanceController, getStaffWorkloadController, generateScheduledReportsController, getCronJobStatusController, getDashboardStatsController, getBookingStatusBarChartController, } from '../controllers/reporting.controller';
 import { authMiddleware } from '../middlewares/auth.middleware';
 import { requirePermission } from '../middlewares/permission.middleware';
-import { Permission } from '../prisma/generated/prisma';
+import { Permission } from '../types/enums';
 const router = express.Router();
 router.use(authMiddleware);
 // Dashboard and analytics - require analytics view permission

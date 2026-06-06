@@ -288,11 +288,11 @@ const CustomersPage = () => {
         }}
         onDelete={staffId => {
           if (confirm('Are you sure you want to delete this staff member?')) {
-            deleteStaffMutation.mutate(staffId);
+            deleteStaffMutation.mutate(String(staffId));
           }
         }}
         onToggleStatus={(staffId, isActive) => {
-          toggleStatusMutation.mutate({ staffId, isActive });
+          toggleStatusMutation.mutate({ staffId: String(staffId), isActive });
         }}
       />
     </div>

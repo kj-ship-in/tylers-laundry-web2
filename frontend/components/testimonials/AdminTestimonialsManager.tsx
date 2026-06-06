@@ -16,7 +16,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Star, User, CheckCircle, XCircle, Eye, Trash2 } from 'lucide-react';
+import { Star, User, CheckCircle, Trash2 } from 'lucide-react';
+import { appImages } from '@/constants/app-images';
 import {
   useAdminTestimonials,
   useApproveTestimonial,
@@ -48,11 +49,11 @@ export function AdminTestimonialsManager({}: AdminTestimonialsManagerProps) {
   const approveMutation = useApproveTestimonial();
   const deleteMutation = useDeleteTestimonial();
 
-  const handleApprove = async (id: number) => {
+  const handleApprove = async (id: string) => {
     await approveMutation.mutateAsync(id);
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     await deleteMutation.mutateAsync(id);
   };
 
@@ -191,8 +192,12 @@ export function AdminTestimonialsManager({}: AdminTestimonialsManagerProps) {
                 >
                   <Avatar className='w-10 h-10'>
                     <AvatarImage
-                      src={testimonial.user.profileUrl}
-                      alt={testimonial.user.name}
+                      src={
+                        testimonial.user?.profileUrl
+                          ? `/api/images${testimonial.user.profileUrl}`
+                          : appImages.profileImage.src
+                      }
+                      alt={testimonial.user?.name ?? 'User'}
                     />
                     <AvatarFallback>
                       <User className='w-4 h-4' />

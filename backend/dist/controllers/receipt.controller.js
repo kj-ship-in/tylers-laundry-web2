@@ -48,7 +48,7 @@ export const getAllReceiptsController = async (req, res, next) => {
 export const getReceiptByIdController = async (req, res, next) => {
     try {
         const parsedId = receiptSchema.safeParse({
-            receiptId: parseInt(req.params.id),
+            receiptId: req.params.id,
         });
         if (!parsedId.success) {
             return res.status(400).json({
@@ -71,7 +71,7 @@ export const getReceiptByIdController = async (req, res, next) => {
 };
 export const updateReceiptController = async (req, res, next) => {
     try {
-        const id = Number(req.params.id);
+        const id = req.params.id;
         const parsed = updateReceiptSchema.safeParse(req.body);
         if (!parsed.success) {
             return res.status(400).json({
@@ -91,7 +91,7 @@ export const updateReceiptController = async (req, res, next) => {
 };
 export const deleteReceiptController = async (req, res, next) => {
     try {
-        const id = Number(req.params.id);
+        const id = req.params.id;
         await receiptService.deleteReceipt(id);
         res.status(200).json({ message: 'Receipt deleted successfully' });
     }
@@ -101,7 +101,7 @@ export const deleteReceiptController = async (req, res, next) => {
 };
 export const generateReceiptPDFController = async (req, res, next) => {
     try {
-        const receiptId = Number(req.params.id);
+        const receiptId = req.params.id;
         const result = await receiptService.generateReceiptPDF(receiptId);
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);
@@ -120,6 +120,13 @@ export const generateReceiptsReportController = async (req, res, next) => {
         const startDate = req.query.startDate;
         const endDate = req.query.endDate;
         const status = req.query.status;
+        console.log('🔍 Controller received query params:', {
+            format,
+            startDate,
+            endDate,
+            status,
+            allQuery: req.query,
+        });
         const result = await receiptService.generateReceiptsReport({
             format,
             startDate,
@@ -128,6 +135,11 @@ export const generateReceiptsReportController = async (req, res, next) => {
         });
         if (result.format === 'excel') {
             res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);
+            res.send(result.buffer);
+        }
+        else if (result.format === 'pdf') {
+            res.setHeader('Content-Type', 'application/pdf');
             res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);
             res.send(result.buffer);
         }

@@ -3,27 +3,22 @@
 import React, { useState } from 'react';
 import DataTable from '@/components/table/DataTable';
 import { Button } from '@/components/ui/button';
-import { useQueryClient } from '@tanstack/react-query';
 import {
   useFetchAllBookings,
   useUpdateBookingStatus,
 } from '@/hooks/useBookingsQuery';
 import type { Booking } from '@/types/booking.d';
 import { Badge } from '@/components/ui/badge';
+import type { Column } from '@/types/table';
 import UpdateBookingStatusDialog from '@/components/dialog/UpdateBookingStatusDialog';
-import { usePermissions } from '@/hooks/usePermissions';
-import { Permission } from '@/types/permission';
 
 const BookingsPage = () => {
   const { data, isLoading, error } = useFetchAllBookings();
-  const queryClient = useQueryClient();
   const updateStatusMutation = useUpdateBookingStatus();
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [newStatus, setNewStatus] = useState<Booking['status']>('PENDING');
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  // Permission checks
-  const { hasPermission } = usePermissions();
   const handleUpdateStatus = () => {
     if (selectedBooking) {
       updateStatusMutation.mutate(
@@ -41,12 +36,7 @@ const BookingsPage = () => {
     }
   };
 
-  const columns: Array<{
-    key?: keyof Booking;
-    title: string;
-    width?: string;
-    render?: (value: any, row?: Booking, index?: number) => React.ReactNode;
-  }> = [
+  const columns: Column<Booking>[] = [
     {
       title: '#No',
       width: '60px',
@@ -69,40 +59,58 @@ const BookingsPage = () => {
     {
       key: 'date' as keyof Booking,
       title: 'Date',
+      className: 'whitespace-nowrap',
       render: (value: string) => new Date(value).toLocaleDateString(),
     },
     {
       key: 'pickupTime' as keyof Booking,
       title: 'Pickup Time',
+      className: 'whitespace-nowrap',
     },
     {
       key: 'pickupAddress' as keyof Booking,
       title: 'Pickup Address',
+      width: '160px',
+      render: (value: string) => (
+        <span className='block max-w-[140px] truncate' title={value}>
+          {value || '-'}
+        </span>
+      ),
     },
     {
       key: 'deliveryAddress' as keyof Booking,
       title: 'Delivery Address',
-      render: (value: string) => value || 'Same as pickup',
+      width: '160px',
+      render: (value: string) => (
+        <span
+          className='block max-w-[140px] truncate'
+          title={value || 'Same as pickup'}
+        >
+          {value || 'Same as pickup'}
+        </span>
+      ),
     },
     {
       key: 'totalAmount' as keyof Booking,
       title: 'Total Amount',
+      className: 'whitespace-nowrap',
       render: (value: string | number) => `GMD ${value}`,
     },
     {
       key: 'status' as keyof Booking,
       title: 'Status',
+      className: 'whitespace-nowrap',
       render: (value: Booking['status']) => {
-        const statusColors = {
-          PENDING: 'bg-yellow-100 text-yellow-800 border-yellow-200 ',
-          IN_PROGRESS: 'bg-orange-100 text-orange-800 border-orange-200 ',
-          COMPLETED: 'bg-green-100 text-green-800 border-green-200 ',
-          DELIVERED: 'bg-indigo-100 text-indigo-800 border-indigo-200 ',
-          CANCELLED: 'bg-red-100 text-red-800 border-red-200 ',
+        const statusColors: Record<string, string> = {
+          PENDING: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+          IN_PROGRESS: 'bg-orange-100 text-orange-800 border-orange-200',
+          COMPLETED: 'bg-green-100 text-green-800 border-green-200',
+          DELIVERED: 'bg-indigo-100 text-indigo-800 border-indigo-200',
+          CANCELLED: 'bg-red-100 text-red-800 border-red-200',
         };
 
         return (
-          <Badge className={statusColors[value] || 'bg-gray-100 text-gray-800'}>
+          <Badge className={statusColors[value] ?? 'bg-gray-100 text-gray-800'}>
             {value.replace('_', ' ')}
           </Badge>
         );
@@ -112,6 +120,10 @@ const BookingsPage = () => {
       title: 'Actions',
       render: (_: any, row?: Booking) => {
         if (!row) return null;
+
+        if (['COMPLETED', 'DELIVERED', 'CANCELLED'].includes(row.status)) {
+          return <span className='text-gray-400 text-sm'>Finalized</span>;
+        }
 
         return (
           <Button
@@ -146,8 +158,8 @@ const BookingsPage = () => {
     <div className='space-y-2'>
       <div className='flex items-center justify-between'>
         <div>
-          <h1 className='text-2xl font-bold text-gray-900'>My Bookings</h1>
-          <p className='text-gray-600'>View and manage your service bookings</p>
+          <h1 className='text-2xl font-bold text-gray-900'>All Bookings</h1>
+          <p className='text-gray-600'>View and manage all service bookings</p>
         </div>
       </div>
 

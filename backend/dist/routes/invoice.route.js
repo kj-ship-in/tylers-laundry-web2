@@ -2,7 +2,7 @@ import express from 'express';
 import { createInvoiceController, getAllInvoicesController, getInvoiceByIdController, updateInvoiceController, deleteInvoiceController, markInvoiceAsPaidController, generateInvoicePDFController, generateInvoicesReportController, getInvoiceStatsController, getOverdueInvoicesController, } from '../controllers/invoice.controller';
 import { authMiddleware } from '../middlewares/auth.middleware';
 import { requirePermission } from '../middlewares/permission.middleware';
-import { Permission } from '../prisma/generated/prisma';
+import { Permission } from '../types/enums';
 const router = express.Router();
 router.use(authMiddleware);
 // CRUD operations

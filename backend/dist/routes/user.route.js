@@ -5,7 +5,7 @@ import { authMiddleware } from '../middlewares/auth.middleware';
 import { upload } from '../middlewares/multer.middleware';
 import { requirePermission, requireAnyPermission, } from '../middlewares/permission.middleware';
 import { handleUploadError } from '../middlewares/upload-error.middleware';
-import { Permission } from '../prisma/generated/prisma';
+import { Permission } from '../types/enums';
 const router = express.Router();
 router.use(authMiddleware);
 // Profile routes - any authenticated user

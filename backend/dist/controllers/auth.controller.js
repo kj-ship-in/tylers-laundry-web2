@@ -1,4 +1,3 @@
-import prisma from '../lib/prisma';
 import * as authService from '../services/auth.service';
 import { sendWelcomeEmail } from '../services/email.service';
 import { comparePassword } from '../utils/hash';
@@ -34,7 +33,7 @@ export const registerAdminController = async (req, res, next) => {
             });
             return;
         }
-        const response = await authService.registerAdmin({ name, email, password }, req.user?.id);
+        const response = await authService.registerAdmin({ name, email, password }, req.user.id);
         res.status(201).json(response);
     }
     catch (error) {
@@ -52,7 +51,7 @@ export const registerStaffController = async (req, res, next) => {
             });
             return;
         }
-        const response = await authService.registerStaff({ name, email, password }, req.user?.id);
+        const response = await authService.registerStaff({ name, email, password }, req.user.id);
         res.status(201).json(response);
     }
     catch (error) {
@@ -274,12 +273,8 @@ export const logoutController = async (req, res, next) => {
 };
 export const softDeleteUserController = async (req, res, next) => {
     try {
-        const userId = parseInt(req.params.id, 10);
+        const userId = req.params.id;
         const { deletionReason, currentPassword } = SoftDeleteUserSchema.parse(req.body);
-        if (isNaN(userId)) {
-            res.status(400).json({ message: 'Invalid user ID' });
-            return;
-        }
         if (!currentPassword) {
             res.status(400).json({
                 message: 'Password is required to delete account',
@@ -292,10 +287,7 @@ export const softDeleteUserController = async (req, res, next) => {
                 .json({ message: 'Forbidden: Cannot delete this account' });
             return;
         }
-        const currentUser = await prisma.user.findUnique({
-            where: { id: userId },
-            select: { password: true, email: true, name: true },
-        });
+        const currentUser = await authService.findOneById(userId);
         if (!currentUser) {
             res.status(404).json({ message: 'User not found' });
             return;
@@ -308,6 +300,10 @@ export const softDeleteUserController = async (req, res, next) => {
             return;
         }
         const user = await authService.softDeleteUser(userId, deletionReason ?? 'USER_REQUESTED');
+        if (!user) {
+            res.status(404).json({ message: 'User not found' });
+            return;
+        }
         res.status(200).json({
             message: 'User account deleted successfully',
             data: {
@@ -337,10 +333,7 @@ export const selfDeleteUserController = async (req, res, next) => {
             });
             return;
         }
-        const currentUser = await prisma.user.findUnique({
-            where: { id: userId },
-            select: { password: true, email: true, name: true },
-        });
+        const currentUser = await authService.findOneById(userId);
         if (!currentUser) {
             res.status(404).json({ message: 'User not found' });
             return;
@@ -353,6 +346,10 @@ export const selfDeleteUserController = async (req, res, next) => {
             return;
         }
         const user = await authService.softDeleteUser(userId, deletionReason ?? 'USER_REQUESTED');
+        if (!user) {
+            res.status(404).json({ message: 'User not found' });
+            return;
+        }
         res.status(200).json({
             message: 'Your account has been deleted successfully',
             data: {
@@ -370,10 +367,7 @@ export const selfDeleteUserController = async (req, res, next) => {
 };
 export const restoreUserController = async (req, res, next) => {
     try {
-        const userId = parseInt(req.params.id, 10);
-        if (isNaN(userId)) {
-            return res.status(400).json({ message: 'Invalid user ID' });
-        }
+        const userId = req.params.id;
         if (req.user?.id !== userId) {
             return res
                 .status(403)

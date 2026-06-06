@@ -17,7 +17,12 @@ export interface IInvoice extends Document {
 
 const InvoiceSchema = new Schema<IInvoice>(
   {
-    paymentId: { type: Schema.Types.ObjectId, ref: 'Payment', required: true, unique: true },
+    paymentId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Payment',
+      required: true,
+      unique: true,
+    },
     invoiceNo: { type: String, required: true, unique: true, maxlength: 50 },
     totalAmount: { type: Number, required: true },
     tax: { type: Number, required: true },
@@ -44,7 +49,16 @@ InvoiceSchema.virtual('receipt', {
   justOne: true,
 });
 
-InvoiceSchema.set('toJSON', { virtuals: true });
+InvoiceSchema.set('toJSON', {
+  virtuals: true,
+  transform: (_doc, ret: any) => {
+    if (ret.paymentId && typeof ret.paymentId === 'object') {
+      ret.payment = ret.paymentId;
+      delete ret.paymentId;
+    }
+    return ret;
+  },
+});
 InvoiceSchema.set('toObject', { virtuals: true });
 
 export const Invoice = mongoose.model<IInvoice>('Invoice', InvoiceSchema);

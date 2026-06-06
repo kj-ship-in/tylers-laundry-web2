@@ -146,21 +146,25 @@ export const generateInvoicesReport = async (filters: {
     .populate(invoicePopulate as any)
     .sort({ createdAt: -1 });
 
+  // Convert to plain objects so toJSON transforms run recursively:
+  // paymentId→payment, bookingId→booking, userId→user, serviceId→service
+  const plainInvoices = invoices.map(i => (i as any).toJSON());
+
   if (filters.format === 'excel') {
-    const excelBuffer = await ExcelReportGenerator.generateInvoicesReport(invoices, filters);
+    const excelBuffer = await ExcelReportGenerator.generateInvoicesReport(plainInvoices, filters);
     const filename = `invoices-report-${Date.now()}.xlsx`;
     const filepath = await ExcelReportGenerator.saveExcelToFile(excelBuffer, filename);
     return { buffer: excelBuffer, filepath, filename, format: 'excel' };
   }
 
   if (filters.format === 'pdf') {
-    const pdfBuffer = await PDFGenerator.generateInvoicesReportPDF(invoices, filters);
+    const pdfBuffer = await PDFGenerator.generateInvoicesReportPDF(plainInvoices, filters);
     const filename = `invoices-report-${Date.now()}.pdf`;
     const filepath = await PDFGenerator.savePDFToFile(pdfBuffer, filename);
     return { buffer: pdfBuffer, filepath, filename, format: 'pdf' };
   }
 
-  return { data: invoices, format: 'json' };
+  return { data: plainInvoices, format: 'json' };
 };
 
 export const getOverdueInvoices = async (options: { page?: number; limit?: number }) => {
@@ -201,7 +205,7 @@ export const getInvoiceStats = async () => {
   const unpaidAmount = revenueResults.find((r: any) => r._id === 'UNPAID')?.total ?? 0;
 
   const twelveMonthsAgo = new Date(new Date().getFullYear(), new Date().getMonth() - 11, 1);
-  const monthlyRevenue = await Invoice.aggregate([
+  const monthlyRevenueRaw = await Invoice.aggregate([
     { $match: { status: 'PAID', issuedAt: { $gte: twelveMonthsAgo } } },
     {
       $group: {
@@ -212,6 +216,13 @@ export const getInvoiceStats = async () => {
     },
     { $sort: { '_id.year': 1, '_id.month': 1 } },
   ]);
+
+  const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const monthlyRevenue = monthlyRevenueRaw.map((m: any) => ({
+    month: `${MONTH_NAMES[m._id.month - 1]} ${m._id.year}`,
+    revenue: m.totalAmount,
+    count: m.count,
+  }));
 
   return { totalInvoices, paidInvoices, unpaidInvoices, overdueInvoices, totalRevenue, unpaidAmount, monthlyRevenue };
 };

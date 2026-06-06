@@ -37,7 +37,7 @@ export const getAllServicesController = async (req, res, next) => {
 };
 export const getServiceByIdController = async (req, res, next) => {
     try {
-        const id = Number(req.params.id);
+        const id = req.params.id;
         const service = await serviceService.getServiceById(id);
         if (!service)
             return res.status(404).json({ message: 'Service not found' });
@@ -49,7 +49,7 @@ export const getServiceByIdController = async (req, res, next) => {
 };
 export const updateServiceController = async (req, res, next) => {
     try {
-        const id = Number(req.params.id);
+        const id = req.params.id;
         const updated = await serviceService.updateService(id, req.body);
         res.json(updated);
     }
@@ -59,7 +59,7 @@ export const updateServiceController = async (req, res, next) => {
 };
 export const deleteServiceController = async (req, res, next) => {
     try {
-        const id = Number(req.params.id);
+        const id = req.params.id;
         const deleted = await serviceService.deleteService(id);
         res.json(deleted);
     }

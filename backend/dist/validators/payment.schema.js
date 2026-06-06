@@ -1,16 +1,18 @@
 import { z } from 'zod';
+import { PaymentMethod, PaymentStatus } from '../types/enums';
+const mongoIdRegex = /^[0-9a-fA-F]{24}$/;
 export const createPaymentSchema = z.object({
-    bookingId: z.number().int(),
+    bookingId: z.string().regex(mongoIdRegex, 'Invalid booking ID'),
     amount: z.coerce.number().positive(),
     currency: z.string().min(1, 'Currency is required'),
-    method: z.enum(['CASH', 'BANK', 'WAVE', 'APS', 'YONNA']),
-    status: z.enum(['PENDING', 'PAID', 'FAILED', 'REFUNDED']).optional(),
+    method: z.nativeEnum(PaymentMethod),
+    status: z.nativeEnum(PaymentStatus).optional(),
     gatewayResponse: z.string().optional(),
 });
 export const updatePaymentSchema = z.object({
-    status: z.enum(['PENDING', 'PAID', 'FAILED', 'REFUNDED']).optional(),
+    status: z.nativeEnum(PaymentStatus).optional(),
     gatewayResponse: z.string().optional(),
 });
 export const updatePaymentStatusSchema = z.object({
-    status: z.enum(['PENDING', 'PAID', 'FAILED', 'REFUNDED']),
+    status: z.nativeEnum(PaymentStatus),
 });

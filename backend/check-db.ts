@@ -3,66 +3,48 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-import prisma from './src/lib/prisma';
+import mongoose from 'mongoose';
+import User from './src/models/user.model';
+import Receipt from './src/models/receipt.model';
+import Service from './src/models/service.model';
 
 async function checkDatabase() {
   console.log('Checking database contents...');
 
   try {
-    // First, just check if we can connect
-    const userCount = await prisma.user.count();
-    console.log('✅ Database connection successful. Users count:', userCount);
+    await mongoose.connect(process.env.MONGODB_URI as string);
+    console.log('✅ MongoDB connection successful');
 
-    // Check receipts
-    const receipts = await prisma.receipt.findMany({
-      include: {
-        invoice: {
-          include: {
-            payment: {
-              include: {
-                booking: {
-                  include: {
-                    user: true,
-                    service: true,
-                  },
-                },
-              },
-            },
+    const userCount = await User.countDocuments();
+    console.log('Users count:', userCount);
+
+    const receipts = await Receipt.find()
+      .populate({
+        path: 'invoiceId',
+        populate: {
+          path: 'paymentId',
+          populate: {
+            path: 'bookingId',
+            populate: ['userId', 'serviceId'],
           },
         },
-      },
-    });
+      })
+      .lean();
 
     console.log('Receipts found:', receipts.length);
     if (receipts.length > 0) {
       console.log('First receipt:', JSON.stringify(receipts[0], null, 2));
-
-      // Test flattening
-      const flattened = {
-        ...receipts[0],
-        payment: receipts[0].invoice?.payment ?? null,
-        booking: receipts[0].invoice?.payment?.booking ?? null,
-        user: receipts[0].invoice?.payment?.booking?.user ?? null,
-        service: receipts[0].invoice?.payment?.booking?.service ?? null,
-      };
-
-      console.log('Flattened receipt:', JSON.stringify(flattened, null, 2));
-      console.log('User name:', flattened.user?.name);
-      console.log('Service title:', flattened.service?.title);
-      console.log('Payment amount:', flattened.payment?.amount);
     }
 
-    // Check users
-    const users = await prisma.user.findMany();
+    const users = await User.find().lean();
     console.log('Users found:', users.length);
 
-    // Check services
-    const services = await prisma.service.findMany();
+    const services = await Service.find().lean();
     console.log('Services found:', services.length);
   } catch (error) {
     console.error('Database error:', error);
   } finally {
-    await prisma.$disconnect();
+    await mongoose.disconnect();
   }
 }
 

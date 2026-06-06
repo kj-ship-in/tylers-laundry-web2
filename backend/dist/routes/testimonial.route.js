@@ -3,7 +3,7 @@ import { createTestimonialController, getAllTestimonialsController, getTestimoni
 import { authMiddleware } from '../middlewares/auth.middleware';
 import { requirePermission } from '../middlewares/permission.middleware';
 import { validateBody, validateParams, validateQuery, } from '../middlewares/validate';
-import { Permission } from '../prisma/generated/prisma';
+import { Permission } from '../types/enums';
 import { CreateTestimonialSchema, UpdateTestimonialSchema, GetTestimonialsQuerySchema, TestimonialIdSchema, } from '../validators/testimonial.schema';
 const router = express.Router();
 // Public routes - no authentication required

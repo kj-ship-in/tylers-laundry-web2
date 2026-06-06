@@ -1,39 +1,25 @@
-import prisma from '../lib/prisma';
-import { BookingStatus, PaymentStatus } from '../prisma/generated/prisma';
+/* eslint-disable no-console */
+import { Booking } from '../models/booking.model';
+import { Payment } from '../models/payment.model';
+import { BookingStatus, PaymentStatus } from '../types/enums';
 export const getCustomerDashboardStats = async (userId) => {
     try {
-        // Total Bookings for the user
-        const totalBookings = await prisma.booking.count({
-            where: { userId },
-        });
-        // Total Spent (from paid payments)
-        const totalSpentResult = await prisma.payment.aggregate({
-            where: {
-                booking: { userId },
-                status: PaymentStatus.PAID,
-            },
-            _sum: { amount: true },
-        });
-        const totalSpent = totalSpentResult._sum.amount ?? 0;
-        // Pending Payments
-        const pendingPayments = await prisma.payment.count({
-            where: {
-                booking: { userId },
-                status: PaymentStatus.PENDING,
-            },
-        });
-        // Active Bookings (PENDING or IN_PROGRESS)
-        const activeBookings = await prisma.booking.count({
-            where: {
+        const bookingIds = await Booking.find({ userId }).distinct('_id');
+        const [totalBookings, totalSpentResult, pendingPayments, activeBookings] = await Promise.all([
+            Booking.countDocuments({ userId }),
+            Payment.aggregate([
+                { $match: { bookingId: { $in: bookingIds }, status: PaymentStatus.PAID } },
+                { $group: { _id: null, total: { $sum: '$amount' } } },
+            ]),
+            Payment.countDocuments({ bookingId: { $in: bookingIds }, status: PaymentStatus.PENDING }),
+            Booking.countDocuments({
                 userId,
-                status: {
-                    in: [BookingStatus.PENDING, BookingStatus.IN_PROGRESS],
-                },
-            },
-        });
+                status: { $in: [BookingStatus.PENDING, BookingStatus.IN_PROGRESS] },
+            }),
+        ]);
         return {
             totalBookings,
-            totalSpent: Number(totalSpent),
+            totalSpent: Number(totalSpentResult[0]?.total ?? 0),
             pendingPayments,
             activeBookings,
         };
@@ -45,35 +31,12 @@ export const getCustomerDashboardStats = async (userId) => {
 };
 export const getCustomerRecentBookings = async (userId, limit = 5) => {
     try {
-        return await prisma.booking.findMany({
-            where: { userId },
-            take: limit,
-            orderBy: { createdAt: 'desc' },
-            include: {
-                user: {
-                    select: {
-                        name: true,
-                        phone: true,
-                        address: true,
-                    },
-                },
-                service: {
-                    select: {
-                        id: true,
-                        title: true,
-                        type: true,
-                        price: true,
-                    },
-                },
-                payments: {
-                    select: {
-                        status: true,
-                        amount: true,
-                        currency: true,
-                    },
-                },
-            },
-        });
+        return Booking.find({ userId })
+            .sort({ createdAt: -1 })
+            .limit(limit)
+            .populate({ path: 'userId', select: 'name phone address' })
+            .populate({ path: 'serviceId', select: 'id title type price' })
+            .populate({ path: 'payments', select: 'status amount currency' });
     }
     catch (error) {
         console.error('Error fetching customer recent bookings:', error);
@@ -82,30 +45,14 @@ export const getCustomerRecentBookings = async (userId, limit = 5) => {
 };
 export const getCustomerUpcomingBookings = async (userId, limit = 5) => {
     try {
-        const now = new Date();
-        return await prisma.booking.findMany({
-            where: {
-                userId,
-                date: {
-                    gte: now,
-                },
-                status: {
-                    in: [BookingStatus.PENDING, BookingStatus.IN_PROGRESS],
-                },
-            },
-            take: limit,
-            orderBy: { date: 'asc' },
-            include: {
-                service: {
-                    select: {
-                        id: true,
-                        title: true,
-                        type: true,
-                        price: true,
-                    },
-                },
-            },
-        });
+        return Booking.find({
+            userId,
+            date: { $gte: new Date() },
+            status: { $in: [BookingStatus.PENDING, BookingStatus.IN_PROGRESS] },
+        })
+            .sort({ date: 1 })
+            .limit(limit)
+            .populate({ path: 'serviceId', select: 'id title type price' });
     }
     catch (error) {
         console.error('Error fetching customer upcoming bookings:', error);

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import DataTable from '@/components/table/DataTable';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -9,14 +9,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import {
-  MoreHorizontal,
-  Eye,
-  CheckCircle,
-  Trash2,
-  Star,
-  User,
-} from 'lucide-react';
+import { MoreHorizontal, Eye, CheckCircle, Trash2, Star } from 'lucide-react';
 import { toast } from 'sonner';
 import { usePermissions } from '@/hooks/usePermissions';
 import {
@@ -25,8 +18,8 @@ import {
   useDeleteTestimonial,
 } from '@/hooks/useTestimonials';
 import type { Testimonial } from '@/types/testimonials';
+import type { Column } from '@/types/table';
 import { TestimonialDetailsSheet } from '@/components/sheets/TestimonialDetailsSheet';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { TestimonialsStats } from '@/components/testimonials/TestimonialsStats';
 import Image from 'next/image';
 import { appImages } from '@/constants/app-images';
@@ -41,12 +34,7 @@ const AdminTestimonialsPage = () => {
     useState<Testimonial | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
 
-  const {
-    data,
-    isFetching: isLoading,
-    error,
-    refetch,
-  } = useAdminTestimonials({
+  const { data, isLoading, error } = useAdminTestimonials({
     isApproved:
       filter === 'approved' ? true : filter === 'pending' ? false : undefined,
   });
@@ -73,45 +61,36 @@ const AdminTestimonialsPage = () => {
     }
   };
 
-  const columns: Array<{
-    key?: keyof Testimonial;
-    title: string;
-    width?: string;
-    render?: (value: any, row?: Testimonial, index?: number) => React.ReactNode;
-  }> = [
+  const columns: Column<Testimonial>[] = [
     {
-      title: '#No',
-      width: '60px',
-      render: (_: any, __: any, index?: number) => {
-        const rowIndex = (index ?? 0) + 1;
-        const formattedIndex = rowIndex.toString().padStart(2, '0');
-        return (
-          <div className='text-start text-slate-600'>{formattedIndex}</div>
-        );
-      },
+      title: '#',
+      width: '48px',
+      render: (_: any, __: any, index?: number) => (
+        <div className='text-slate-600 text-sm'>
+          {((index ?? 0) + 1).toString().padStart(2, '0')}
+        </div>
+      ),
     },
     {
       title: 'Customer',
       render: (_: any, row?: Testimonial) => {
         if (!row) return null;
         return (
-          <div className='flex items-center space-x-3'>
-            <div className='w-8 h-8'>
-              <Image
-                src={
-                  row.user.profileUrl
-                    ? `/api/images${row.user.profileUrl}`
-                    : appImages.profileImage
-                }
-                alt={row.user.name}
-                width={32}
-                height={32}
-                className='rounded-full w-8 h-8  object-cover'
-              />
-            </div>
-            <div>
-              <div className='font-medium text-gray-900'>{row.user.name}</div>
-            </div>
+          <div className='flex items-center gap-2.5 min-w-0'>
+            <Image
+              src={
+                row.user?.profileUrl
+                  ? `/api/images${row.user.profileUrl}`
+                  : appImages.profileImage
+              }
+              alt={row.user?.name ?? 'User'}
+              width={32}
+              height={32}
+              className='rounded-full w-8 h-8 object-cover shrink-0'
+            />
+            <span className='font-medium text-gray-900 truncate'>
+              {row.user?.name}
+            </span>
           </div>
         );
       },
@@ -119,77 +98,73 @@ const AdminTestimonialsPage = () => {
     {
       key: 'rating',
       title: 'Rating',
+      className: 'hidden sm:table-cell',
       render: (value: number) => (
-        <div className='flex items-center'>
+        <div className='flex items-center gap-1'>
           {[1, 2, 3, 4, 5].map(star => (
             <Star
               key={star}
-              className={`w-4 h-4 ${
-                star <= value
-                  ? 'fill-yellow-400 text-yellow-400'
-                  : 'text-gray-300'
-              }`}
+              className={`w-3.5 h-3.5 ${star <= value ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`}
             />
           ))}
-          <span className='ml-2 text-sm text-gray-600'>({value})</span>
+          <span className='ml-1 text-sm text-gray-600'>({value})</span>
         </div>
       ),
     },
     {
-      key: 'title',
-      title: 'Title',
+      title: 'Review',
+      render: (_: any, row?: Testimonial) => {
+        if (!row) return null;
+        return (
+          <div className='space-y-0.5 min-w-0'>
+            <p className='font-medium text-gray-900 truncate'>{row.title}</p>
+            <p
+              className='text-sm text-gray-500 truncate max-w-xs'
+              title={row.content}
+            >
+              {row.content}
+            </p>
+          </div>
+        );
+      },
     },
     {
-      key: 'content',
-      title: 'Content',
-      render: (value: string) => (
-        <div className='max-w-xs truncate' title={value}>
-          {value}
-        </div>
-      ),
-    },
-    {
-      key: 'isApproved',
       title: 'Status',
-      render: (value: boolean) => (
-        <Badge
-          className={
-            value
-              ? 'bg-green-100 text-green-800'
-              : 'bg-yellow-100 text-yellow-800'
-          }
-        >
-          {value ? 'Approved' : 'Pending'}
-        </Badge>
-      ),
-    },
-    {
-      key: 'isActive',
-      title: 'Active',
-      render: (value: boolean, row?: Testimonial) => (
-        <Button
-          variant={value ? 'default' : 'outline'}
-          size='sm'
-          onClick={() => {
-            if (!value && row) {
-              handleApprove(row._id);
-            }
-          }}
-          disabled={approveMutation.isPending}
-          className={value ? 'bg-green-600 hover:bg-green-700' : ''}
-        >
-          {value ? 'Active' : 'Activate'}
-        </Button>
-      ),
+      render: (_: any, row?: Testimonial) => {
+        if (!row) return null;
+        return (
+          <div className='flex flex-col gap-1'>
+            <Badge
+              className={
+                row.isApproved
+                  ? 'bg-green-100 text-green-800 hover:bg-green-100'
+                  : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100'
+              }
+            >
+              {row.isApproved ? 'Approved' : 'Pending'}
+            </Badge>
+            {!row.isActive && (
+              <Badge variant='outline' className='text-gray-500 text-xs'>
+                Inactive
+              </Badge>
+            )}
+          </div>
+        );
+      },
     },
     {
       key: 'createdAt',
-      title: 'Created At',
-      render: (value: string) => new Date(value).toLocaleDateString(),
+      title: 'Created',
+      className: 'hidden md:table-cell',
+      render: (value: string) => (
+        <span className='text-sm text-gray-600 whitespace-nowrap'>
+          {new Date(value).toLocaleDateString()}
+        </span>
+      ),
     },
     {
       title: 'Actions',
-      width: '120px',
+      width: '56px',
       render: (_: any, row?: Testimonial) => {
         if (!row) return null;
         return (

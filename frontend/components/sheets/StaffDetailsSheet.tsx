@@ -30,8 +30,8 @@ interface StaffDetailsSheetProps {
   onClose: () => void;
   staff: User | null;
   onEdit?: (staff: User) => void;
-  onDelete?: (staffId: number) => void;
-  onToggleStatus?: (staffId: number, isActive: boolean) => void;
+  onDelete?: (staffId: string) => void;
+  onToggleStatus?: (staffId: string, isActive: boolean) => void;
 }
 
 export const StaffDetailsSheet: React.FC<StaffDetailsSheetProps> = ({

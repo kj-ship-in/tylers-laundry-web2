@@ -73,7 +73,7 @@ const AddPaymentDialog: React.FC<AddPaymentDialogProps> = ({
     const { amount, bookingId, ...rest } = data;
 
     createPaymentMutation.mutate({
-      bookingId: Number(bookingId),
+      bookingId,
       amount: Number(amount),
       ...rest,
     });
@@ -115,7 +115,10 @@ const AddPaymentDialog: React.FC<AddPaymentDialogProps> = ({
                   </SelectItem>
                 ) : (
                   bookings.map(booking => (
-                    <SelectItem key={booking._id} value={booking._id.toString()}>
+                    <SelectItem
+                      key={booking._id}
+                      value={booking._id.toString()}
+                    >
                       #{booking._id} - {booking.service?.title || 'N/A'}
                     </SelectItem>
                   ))

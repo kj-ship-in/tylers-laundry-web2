@@ -1,42 +1,37 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import DataTable from '@/components/table/DataTable';
-import { Button } from '@/components/ui/button';
-import { CheckCircle, XCircle } from 'lucide-react';
-import { useQueryClient } from '@tanstack/react-query';
-import {
-  useFetchAllBookings,
-  useFetchAllMyBookings,
-} from '@/hooks/useBookingsQuery';
+import { useFetchAllMyBookings } from '@/hooks/useBookingsQuery';
 import type { Booking } from '@/types/booking.d';
 import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
-import { usePermissions } from '@/hooks/usePermissions';
-import { Permission } from '@/types/permission';
+
+const STATUS_COLORS: Record<string, string> = {
+  PENDING: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+  IN_PROGRESS: 'bg-orange-100 text-orange-800 border-orange-200',
+  COMPLETED: 'bg-green-100 text-green-800 border-green-200',
+  DELIVERED: 'bg-indigo-100 text-indigo-800 border-indigo-200',
+  CANCELLED: 'bg-red-100 text-red-800 border-red-200',
+};
 
 const BookingsPage = () => {
-  const { data, isFetching: isLoading, error } = useFetchAllMyBookings();
-
-  // Permission checks
-  const { hasPermission } = usePermissions();
+  const { data, isLoading, error } = useFetchAllMyBookings();
 
   const columns: Array<{
     key?: keyof Booking;
     title: string;
     width?: string;
+    className?: string;
     render?: (value: any, row?: Booking, index?: number) => React.ReactNode;
   }> = [
     {
       title: '#No',
       width: '60px',
-      render: (_: any, __: any, index?: number) => {
-        const rowIndex = (index ?? 0) + 1;
-        const formattedIndex = rowIndex.toString().padStart(2, '0');
-        return (
-          <div className='text-start text-slate-600'>{formattedIndex}</div>
-        );
-      },
+      render: (_: any, __: any, index?: number) => (
+        <div className='text-start text-slate-600'>
+          {((index ?? 0) + 1).toString().padStart(2, '0')}
+        </div>
+      ),
     },
     {
       title: 'Service',
@@ -45,62 +40,52 @@ const BookingsPage = () => {
     {
       key: 'date' as keyof Booking,
       title: 'Date',
+      className: 'whitespace-nowrap',
       render: (value: string) => new Date(value).toLocaleDateString(),
     },
     {
       key: 'pickupTime' as keyof Booking,
       title: 'Pickup Time',
+      className: 'whitespace-nowrap',
     },
     {
       key: 'pickupAddress' as keyof Booking,
       title: 'Pickup Address',
+      width: '160px',
+      render: (value: string) => (
+        <span className='block max-w-[140px] truncate' title={value}>
+          {value || '-'}
+        </span>
+      ),
     },
     {
       key: 'deliveryAddress' as keyof Booking,
       title: 'Delivery Address',
-      render: (value: string) => value || 'Same as pickup',
+      width: '160px',
+      render: (value: string) => (
+        <span
+          className='block max-w-[140px] truncate'
+          title={value || 'Same as pickup'}
+        >
+          {value || 'Same as pickup'}
+        </span>
+      ),
     },
     {
       key: 'totalAmount' as keyof Booking,
-      title: 'Total Amount',
+      title: 'Total',
+      className: 'whitespace-nowrap',
       render: (value: string | number) => `GMD ${value}`,
     },
     {
       key: 'status' as keyof Booking,
       title: 'Status',
-      render: (value: Booking['status']) => {
-        const statusColors = {
-          PENDING: 'bg-yellow-100 text-yellow-800',
-          CONFIRMED: 'bg-blue-100 text-blue-800',
-          COMPLETED: 'bg-green-100 text-green-800',
-          CANCELLED: 'bg-red-100 text-red-800',
-        };
-
-        return (
-          <Badge className={statusColors[value] ?? 'bg-gray-100 text-gray-800'}>
-            {value}
-          </Badge>
-        );
-      },
-    },
-    {
-      title: 'Actions',
-      render: (_: any, __?: Booking) => {
-        if (!hasPermission('booking:update:own')) {
-          return <span className='text-gray-400'>No actions</span>;
-        }
-
-        return (
-          <Button
-            size='sm'
-            variant='default'
-            className='bg-blue-600 hover:bg-blue-700'
-            onClick={() => null}
-          >
-            Edit
-          </Button>
-        );
-      },
+      className: 'whitespace-nowrap',
+      render: (value: Booking['status']) => (
+        <Badge className={STATUS_COLORS[value] ?? 'bg-gray-100 text-gray-800'}>
+          {value.replace('_', ' ')}
+        </Badge>
+      ),
     },
   ];
 
@@ -117,12 +102,13 @@ const BookingsPage = () => {
   }
 
   return (
-    <div className='space-y-2'>
-      <div className='flex items-center justify-between'>
-        <div>
-          <h1 className='text-2xl font-bold text-gray-900'>My Bookings</h1>
-          <p className='text-gray-600'>View and manage your service bookings</p>
-        </div>
+    <div className='space-y-4'>
+      <div>
+        <h1 className='text-2xl font-bold text-gray-900'>My Bookings</h1>
+        <p className='text-gray-500 text-sm mt-1'>
+          Track the status of your submitted bookings. Contact us if you need
+          changes.
+        </p>
       </div>
 
       <DataTable
@@ -130,7 +116,7 @@ const BookingsPage = () => {
         data={data ?? []}
         loading={isLoading}
         searchPlaceholder='Search bookings...'
-        emptyMessage='No bookings found.'
+        emptyMessage='You have no bookings yet.'
         enableSorting
         enableFiltering
         enablePagination

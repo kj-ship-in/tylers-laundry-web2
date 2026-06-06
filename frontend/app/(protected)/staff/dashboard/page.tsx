@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import {
   DollarSign,
   Package,
@@ -8,7 +8,6 @@ import {
   FileText,
   Plus,
   Calendar,
-  Clock,
   CheckCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -24,13 +23,7 @@ import ServicesPerformance from '@/components/dashboard/ServicesPerformance';
 import AddBookingDialog from '@/components/dialog/AddBookingDialog';
 import SchedulePickupDialog from '@/components/dialog/SchedulePickupDialog';
 
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { UserRole } from '@/utils/api-client';
@@ -42,20 +35,15 @@ const StaffDashboard = () => {
   const { data: session, status } = useSession();
   const router = useRouter();
   const { hasPermission } = usePermissions();
-  const { data: dashboardStats, isFetching: statsLoading } = useStaffStats();
-  const { data: servicesStats, isFetching: servicesLoading } =
+  const { data: dashboardStats, isLoading: statsLoading } = useStaffStats();
+  const { data: servicesStats, isLoading: servicesLoading } =
     useFetchServiceStats();
 
-  const {
-    data: bookings,
-    isFetching: isLoading,
-    isError,
-    error,
-  } = useStaffRecentBookings();
+  const { data: bookings, isLoading, error } = useStaffRecentBookings();
 
   const {
     data: dailyOverview,
-    isFetching: dailyOverviewLoading,
+    isLoading: dailyOverviewLoading,
     isError: dailyOverviewError,
     error: dailyOverviewErrorData,
   } = useStaffDailyOverview();
@@ -93,7 +81,7 @@ const StaffDashboard = () => {
   }, [dashboardStats]);
 
   // Check authentication and role
-  React.useEffect(() => {
+  useEffect(() => {
     if (status === 'loading') return;
 
     if (!session) {

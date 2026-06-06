@@ -1,4 +1,5 @@
 import { getDashboardDataService, getBookingReportsService, deleteStaffService, updateUserStatusService, deleteCustomerService, } from '../services/admin.service';
+import { Permission } from '../types/enums';
 export const getDashboardDataController = async (_, res, next) => {
     try {
         const data = await getDashboardDataService();
@@ -25,10 +26,7 @@ export const getBookingReportsController = async (req, res, next) => {
 };
 export const deleteStaffController = async (req, res, next) => {
     try {
-        const staffId = parseInt(req.params.id, 10);
-        if (isNaN(staffId)) {
-            return res.status(400).json({ message: 'Invalid staff ID' });
-        }
+        const staffId = req.params.id;
         const deletedStaff = await deleteStaffService(staffId);
         return res.status(200).json({
             message: 'Staff deleted successfully',
@@ -41,11 +39,8 @@ export const deleteStaffController = async (req, res, next) => {
 };
 export const updateUserStatusController = async (req, res, next) => {
     try {
-        const userId = parseInt(req.params.id, 10);
+        const userId = req.params.id;
         const { isActive } = req.body;
-        if (isNaN(userId)) {
-            return res.status(400).json({ message: 'Invalid user ID' });
-        }
         if (typeof isActive !== 'boolean') {
             return res.status(400).json({ message: 'isActive must be a boolean' });
         }
@@ -61,14 +56,24 @@ export const updateUserStatusController = async (req, res, next) => {
 };
 export const deleteCustomerController = async (req, res, next) => {
     try {
-        const customerId = parseInt(req.params.id, 10);
-        if (isNaN(customerId)) {
-            return res.status(400).json({ message: 'Invalid customer ID' });
-        }
+        const customerId = req.params.id;
         const deletedCustomer = await deleteCustomerService(customerId);
         return res.status(200).json({
             message: 'Customer deleted successfully',
             data: deletedCustomer,
+        });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+export const getAllPermissionsController = async (_, res, next) => {
+    try {
+        const permissions = Object.values(Permission);
+        return res.status(200).json({
+            message: 'All permissions retrieved successfully',
+            data: permissions,
+            total: permissions.length,
         });
     }
     catch (error) {

@@ -1,10 +1,20 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Testimonial } from '../models/testimonial.model';
 
-const userSelect = { name: true, profileUrl: true };
+const withUser = async (query: any) => {
+  const result = await query
+    .populate({ path: 'userId', select: '_id name profileUrl' })
+    .lean();
 
-const withUser = (query: any) =>
-  query.populate({ path: 'userId', select: '_id name profileUrl' });
+  if (!result) return null;
+
+  const transform = (doc: any) => {
+    const { userId, ...rest } = doc;
+    return { ...rest, user: userId ?? null };
+  };
+
+  return Array.isArray(result) ? result.map(transform) : transform(result);
+};
 
 export const createTestimonialService = async (data: {
   userId: string;
@@ -168,5 +178,3 @@ export const getTestimonialStatsService = async () => {
   };
 };
 
-// suppress unused
-void userSelect;

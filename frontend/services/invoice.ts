@@ -86,7 +86,7 @@ export const markInvoiceAsPaid = async (
 /**
  * Generate PDF for an invoice
  */
-export const generateInvoicePDF = async (invoiceId: number): Promise<Blob> => {
+export const generateInvoicePDF = async (invoiceId: string): Promise<Blob> => {
   const response = await apiClient.get(`/invoices/pdf/${invoiceId}`, {
     responseType: 'blob',
   });

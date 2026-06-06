@@ -21,7 +21,7 @@ export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
-  const { data: session, update } = useSession();
+  const { update } = useSession();
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginFormSchema),
     defaultValues: {
@@ -33,20 +33,6 @@ export function LoginForm() {
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
-  };
-
-  const getRedirectUrl = () => {
-    const role = session?.user?.role;
-    switch (role) {
-      case 'ADMIN':
-        return '/admin/dashboard';
-      case 'STAFF':
-        return '/staff/dashboard';
-      case 'USER':
-        return '/';
-      default:
-        return '/';
-    }
   };
 
   async function onSubmit(values: LoginFormValues) {
@@ -64,16 +50,15 @@ export function LoginForm() {
         setError(result.error);
         setIsLoading(false);
       } else if (result?.ok) {
-        // Update the session to get the latest user data
-        await update();
-
-        // Small delay to ensure session is updated
-        const timeoutId = setTimeout(() => {
-          const redirectUrl = getRedirectUrl(); // Will use session data from context
-          router.push(redirectUrl);
-        }, 100);
-
-        clearTimeout(timeoutId);
+        const newSession = await update();
+        const role = (newSession?.user as any)?.role;
+        const redirectUrl =
+          role === 'ADMIN'
+            ? '/admin/dashboard'
+            : role === 'STAFF'
+              ? '/staff/dashboard'
+              : '/';
+        router.push(redirectUrl);
       }
     } catch (err) {
       console.error('Error logging in:', err);

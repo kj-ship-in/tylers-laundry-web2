@@ -104,7 +104,7 @@ const BookingDrawer = ({ open, onOpenChange }: BookingDrawerProps) => {
     }
 
     createNewBooking(
-      { ...values, serviceId: Number(values.serviceId), totalAmount },
+      { ...values, totalAmount },
       {
         onSuccess: () => {
           form.reset();

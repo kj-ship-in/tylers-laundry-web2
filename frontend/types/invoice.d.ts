@@ -1,4 +1,3 @@
-import { status } from './../node_modules/next-auth/client/__tests__/helpers/mocks.d';
 export interface InvoiceStats {
   totalInvoices: number;
   paidInvoices: number;
@@ -13,20 +12,11 @@ export interface InvoiceStats {
   }>;
 }
 
-export interface InvoiceStats {
+export interface InvoiceQueryParams {
   page: number;
   limit: number;
-  startDate: string;
-  endDate: string;
-  status?: string;
-  search?: string;
-}
-
-export interface InvoiceQueryParams extends PaginationParams {
-  page: number;
-  limit: number;
-  startDate: string;
-  endDate: string;
+  startDate?: string;
+  endDate?: string;
   status?: string;
   search?: string;
 }

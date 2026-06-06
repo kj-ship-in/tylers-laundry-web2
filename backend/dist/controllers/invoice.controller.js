@@ -48,7 +48,7 @@ export const getAllInvoicesController = async (req, res, next) => {
 export const getInvoiceByIdController = async (req, res, next) => {
     try {
         const parsedId = invoiceSchema.safeParse({
-            invoiceId: parseInt(req.params.id),
+            invoiceId: req.params.id,
         });
         if (!parsedId.success) {
             return res.status(400).json({
@@ -71,7 +71,7 @@ export const getInvoiceByIdController = async (req, res, next) => {
 };
 export const updateInvoiceController = async (req, res, next) => {
     try {
-        const id = Number(req.params.id);
+        const id = req.params.id;
         const parsed = updateInvoiceSchema.safeParse(req.body);
         if (!parsed.success) {
             return res.status(400).json({
@@ -91,7 +91,7 @@ export const updateInvoiceController = async (req, res, next) => {
 };
 export const deleteInvoiceController = async (req, res, next) => {
     try {
-        const id = Number(req.params.id);
+        const id = req.params.id;
         await invoiceService.deleteInvoice(id);
         res.status(200).json({ message: 'Invoice deleted successfully' });
     }
@@ -101,7 +101,7 @@ export const deleteInvoiceController = async (req, res, next) => {
 };
 export const markInvoiceAsPaidController = async (req, res, next) => {
     try {
-        const invoiceId = Number(req.params.id);
+        const invoiceId = req.params.id;
         const invoice = await invoiceService.markInvoiceAsPaid(invoiceId);
         res.status(200).json({
             message: 'Invoice marked as paid successfully',
@@ -117,7 +117,7 @@ export const markInvoiceAsPaidController = async (req, res, next) => {
 };
 export const generateInvoicePDFController = async (req, res, next) => {
     try {
-        const invoiceId = Number(req.params.id);
+        const invoiceId = req.params.id;
         const result = await invoiceService.generateInvoicePDF(invoiceId);
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);

@@ -87,7 +87,7 @@ const AddInvoiceDialog: React.FC<AddInvoiceDialogProps> = ({
     setError(null);
 
     const payload = {
-      paymentId: parseInt(data.paymentId),
+      paymentId: data.paymentId,
       totalAmount: parseFloat(data.totalAmount),
       tax: parseFloat(data.tax ?? '0'),
       discount: parseFloat(data.discount ?? '0'),
@@ -130,7 +130,10 @@ const AddInvoiceDialog: React.FC<AddInvoiceDialogProps> = ({
                   disabled={paymentsLoading}
                 >
                   {payments.map(payment => (
-                    <SelectItem key={payment._id} value={payment._id.toString()}>
+                    <SelectItem
+                      key={payment._id}
+                      value={payment._id.toString()}
+                    >
                       Payment #{payment._id} - {payment.transactionId} (
                       {formatToGMD(payment.amount)})
                     </SelectItem>

@@ -138,12 +138,8 @@ export const getStaffsController = async (req, res, next) => {
 };
 export const updateUserRoleController = async (req, res, next) => {
     try {
-        const userId = parseInt(req.params.id, 10);
+        const userId = req.params.id;
         const { role } = req.body;
-        if (isNaN(userId)) {
-            res.status(400).json({ message: 'Invalid user ID' });
-            return;
-        }
         if (!role) {
             res.status(400).json({ message: 'Role is required' });
             return;

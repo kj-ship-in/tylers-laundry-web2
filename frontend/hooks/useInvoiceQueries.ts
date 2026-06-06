@@ -19,46 +19,43 @@ import type {
   CreateInvoiceRequest,
   UpdateInvoiceRequest,
 } from '@/types/payment';
-import { useQuery, useMutation, keepPreviousData } from '@tanstack/react-query';
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  keepPreviousData,
+} from '@tanstack/react-query';
 import type { UseMutationOptions } from '@tanstack/react-query';
 
-/**
- * Hook to get all invoices with pagination
- */
 export const useInvoices = (params: Partial<InvoiceQueryParams> = {}) => {
   const { page = 1, limit = 10, ...queryParams } = params;
   return useQuery({
     queryKey: ['invoices', page, limit, queryParams],
     queryFn: () => getAllInvoices({ page, limit, ...queryParams }),
     placeholderData: keepPreviousData,
+    staleTime: 30_000,
+    refetchOnMount: true,
   });
 };
 
-/**
- * Hook to get a single invoice by ID
- */
-export const useInvoice = (invoiceId: number) => {
+export const useInvoice = (invoiceId: string) => {
   return useQuery({
     queryKey: ['invoice', invoiceId],
     queryFn: () => getInvoiceById(invoiceId),
     enabled: !!invoiceId,
+    staleTime: 30_000,
   });
 };
 
-/**
- * Hook to get invoices by payment ID
- */
-export const useInvoicesByPaymentId = (paymentId: number) => {
+export const useInvoicesByPaymentId = (paymentId: string) => {
   return useQuery({
     queryKey: ['invoices', 'payment', paymentId],
     queryFn: () => getInvoicesByPaymentId(paymentId),
     enabled: !!paymentId,
+    staleTime: 30_000,
   });
 };
 
-/**
- * Hook to get invoice statistics
- */
 export const useInvoiceStats = (params?: {
   startDate?: string;
   endDate?: string;
@@ -66,12 +63,10 @@ export const useInvoiceStats = (params?: {
   return useQuery({
     queryKey: ['invoice-stats', params],
     queryFn: () => getInvoiceStats(params),
+    staleTime: 60_000,
   });
 };
 
-/**
- * Hook to get overdue invoices
- */
 export const useOverdueInvoices = (
   params: Partial<InvoiceQueryParams> = {},
 ) => {
@@ -80,12 +75,10 @@ export const useOverdueInvoices = (
     queryKey: ['invoices', 'overdue', page, limit, queryParams],
     queryFn: () => getOverdueInvoices({ page, limit, ...queryParams }),
     placeholderData: keepPreviousData,
+    staleTime: 30_000,
   });
 };
 
-/**
- * Mutation hook to create an invoice
- */
 export const useCreateInvoiceMutation = (
   options?: UseMutationOptions<
     ApiResponse<InvoiceResponse>,
@@ -93,67 +86,58 @@ export const useCreateInvoiceMutation = (
     CreateInvoiceRequest
   >,
 ) => {
-  return useMutation({
-    mutationFn: createInvoice,
-    ...options,
-  });
+  return useMutation<ApiResponse<InvoiceResponse>, Error, CreateInvoiceRequest>(
+    {
+      mutationFn: createInvoice,
+      ...options,
+    },
+  );
 };
 
-/**
- * Mutation hook to update an invoice
- */
 export const useUpdateInvoiceMutation = (
   options?: UseMutationOptions<
     ApiResponse<InvoiceResponse>,
     Error,
-    { invoiceId: number; data: UpdateInvoiceRequest }
+    { invoiceId: string; data: UpdateInvoiceRequest }
   >,
 ) => {
-  return useMutation({
+  return useMutation<
+    ApiResponse<InvoiceResponse>,
+    Error,
+    { invoiceId: string; data: UpdateInvoiceRequest }
+  >({
     mutationFn: ({ invoiceId, data }) => updateInvoice(invoiceId, data),
     ...options,
   });
 };
 
-/**
- * Mutation hook to delete an invoice
- */
 export const useDeleteInvoiceMutation = (
-  options?: UseMutationOptions<ApiResponse<void>, Error, number>,
+  options?: UseMutationOptions<ApiResponse<void>, Error, string>,
 ) => {
-  return useMutation({
+  return useMutation<ApiResponse<void>, Error, string>({
     mutationFn: deleteInvoice,
     ...options,
   });
 };
 
-/**
- * Mutation hook to mark invoice as paid
- */
 export const useMarkInvoiceAsPaidMutation = (
-  options?: UseMutationOptions<ApiResponse<InvoiceResponse>, Error, number>,
+  options?: UseMutationOptions<ApiResponse<InvoiceResponse>, Error, string>,
 ) => {
-  return useMutation({
+  return useMutation<ApiResponse<InvoiceResponse>, Error, string>({
     mutationFn: markInvoiceAsPaid,
     ...options,
   });
 };
 
-/**
- * Mutation hook to generate invoice PDF
- */
 export const useGenerateInvoicePDFMutation = (
-  options?: UseMutationOptions<Blob, Error, number>,
+  options?: UseMutationOptions<Blob, Error, string>,
 ) => {
-  return useMutation({
+  return useMutation<Blob, Error, string>({
     mutationFn: generateInvoicePDF,
     ...options,
   });
 };
 
-/**
- * Mutation hook to generate invoice report
- */
 export const useGenerateInvoiceReportMutation = (
   options?: UseMutationOptions<
     Blob,
@@ -170,4 +154,12 @@ export const useGenerateInvoiceReportMutation = (
     mutationFn: generateInvoiceReport,
     ...options,
   });
+};
+
+export const useInvalidateInvoices = () => {
+  const queryClient = useQueryClient();
+  return () => {
+    queryClient.invalidateQueries({ queryKey: ['invoices'] });
+    queryClient.invalidateQueries({ queryKey: ['invoice-stats'] });
+  };
 };

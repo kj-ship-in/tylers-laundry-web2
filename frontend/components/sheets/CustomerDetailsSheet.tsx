@@ -26,7 +26,7 @@ interface CustomerDetailsSheetProps {
   isOpen: boolean;
   onClose: () => void;
   customer: User | null;
-  onDelete?: (customerId: number) => void;
+  onDelete?: (customerId: string) => void;
 }
 
 export const CustomerDetailsSheet: React.FC<CustomerDetailsSheetProps> = ({

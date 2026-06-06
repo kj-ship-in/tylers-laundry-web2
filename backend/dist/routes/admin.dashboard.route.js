@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { getDashboardStatsController, getRecentBookingsController, getDailyOverviewController, } from '../controllers/admin.dashboard.controller';
 import { authMiddleware, requireAdmin } from '../middlewares/auth.middleware';
 import { requirePermission } from '../middlewares/permission.middleware';
-import { Permission } from '../prisma/generated/prisma';
+import { Permission } from '../types/enums';
 const router = Router();
 router.use(authMiddleware, requireAdmin);
 /**

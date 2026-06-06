@@ -24,13 +24,15 @@ export const useReceipts = (params: Partial<ReceiptParams> = {}) => {
     queryKey: ['receipts', page, limit, queryParams],
     queryFn: () => getAllReceipts({ page, limit, ...queryParams }),
     placeholderData: keepPreviousData,
+    staleTime: 30_000,
+    refetchOnMount: true,
   });
 };
 
 /**
  * Hook to get a single receipt by ID
  */
-export const useReceipt = (receiptId: number) => {
+export const useReceipt = (receiptId: string) => {
   return useQuery({
     queryKey: ['receipt', receiptId],
     queryFn: () => getReceiptById(receiptId),
@@ -75,7 +77,7 @@ export const useUpdateReceiptMutation = (
   options?: UseMutationOptions<
     ApiResponse<Receipt>,
     Error,
-    { receiptId: number; payload: Partial<ReceiptRequest> },
+    { receiptId: string; payload: Partial<ReceiptRequest> },
     unknown
   >,
 ) => {
@@ -89,7 +91,7 @@ export const useUpdateReceiptMutation = (
  * Mutation hook to delete a receipt
  */
 export const useDeleteReceiptMutation = (
-  options?: UseMutationOptions<ApiResponse<void>, Error, number, unknown>,
+  options?: UseMutationOptions<ApiResponse<void>, Error, string, unknown>,
 ) => {
   return useMutation({
     mutationFn: deleteReceipt,
@@ -101,7 +103,7 @@ export const useDeleteReceiptMutation = (
  * Mutation hook to generate receipt PDF
  */
 export const useGenerateReceiptPDFMutation = (
-  options?: UseMutationOptions<Blob, Error, number, unknown>,
+  options?: UseMutationOptions<Blob, Error, string, unknown>,
 ) => {
   return useMutation({
     mutationFn: generateReceiptPDF,

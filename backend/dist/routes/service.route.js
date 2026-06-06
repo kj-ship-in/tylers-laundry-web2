@@ -2,7 +2,7 @@ import express from 'express';
 import { createServiceController, getAllServicesController, getServiceByIdController, updateServiceController, deleteServiceController, getPublicServicesController, getServiceOverviewController, } from '../controllers/service.controller';
 import { authMiddleware } from '../middlewares/auth.middleware';
 import { requirePermission } from '../middlewares/permission.middleware';
-import { Permission } from '../prisma/generated/prisma';
+import { Permission } from '../types/enums';
 const router = express.Router();
 // Public routes - no authentication required
 router.get('/', getPublicServicesController);
