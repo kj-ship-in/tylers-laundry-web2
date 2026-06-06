@@ -775,3 +775,89 @@
 {"level":"\u001b[35mhttp\u001b[39m","message":"\u001b[35mGET /api/v1/testimonials?isApproved=true&limit=10 - ::1\u001b[39m","timestamp":"2026-06-06 15:34:35:3435"}
 {"level":"\u001b[35mhttp\u001b[39m","message":"\u001b[35mGET / - 200 - 177ms - 2486 bytes\u001b[39m","timestamp":"2026-06-06 15:34:35:3435"}
 {"level":"\u001b[35mhttp\u001b[39m","message":"\u001b[35mGET /?isApproved=true&limit=10 - 200 - 259ms - 1051 bytes\u001b[39m","timestamp":"2026-06-06 15:34:35:3435"}
+{"level":"\u001b[33mwarn\u001b[39m","message":"\u001b[33mMongoDB disconnected\u001b[39m","timestamp":"2026-06-06 19:59:49:5949"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32m🚀 Server running on http://localhost:5000\u001b[39m","timestamp":"2026-06-06 20:48:59:4859"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mInitializing scheduled tasks...\u001b[39m","timestamp":"2026-06-06 20:48:59:4859"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mInitializing cron jobs...\u001b[39m","timestamp":"2026-06-06 20:48:59:4859"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mAll cron jobs initialized and started\u001b[39m","timestamp":"2026-06-06 20:48:59:4859"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mMongoDB connected successfully\u001b[39m","timestamp":"2026-06-06 20:49:01:491"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32m🚀 Server running on http://localhost:5000\u001b[39m","timestamp":"2026-06-06 20:49:24:4924"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mInitializing scheduled tasks...\u001b[39m","timestamp":"2026-06-06 20:49:24:4924"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mInitializing cron jobs...\u001b[39m","timestamp":"2026-06-06 20:49:24:4924"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mAll cron jobs initialized and started\u001b[39m","timestamp":"2026-06-06 20:49:24:4924"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mMongoDB connected successfully\u001b[39m","timestamp":"2026-06-06 20:49:25:4925"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32m🚀 Server running on http://localhost:5000\u001b[39m","timestamp":"2026-06-06 20:49:50:4950"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mInitializing scheduled tasks...\u001b[39m","timestamp":"2026-06-06 20:49:50:4950"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mInitializing cron jobs...\u001b[39m","timestamp":"2026-06-06 20:49:50:4950"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mAll cron jobs initialized and started\u001b[39m","timestamp":"2026-06-06 20:49:50:4950"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mMongoDB connected successfully\u001b[39m","timestamp":"2026-06-06 20:49:52:4952"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32m🚀 Server running on http://localhost:5000\u001b[39m","timestamp":"2026-06-06 20:50:16:5016"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mInitializing scheduled tasks...\u001b[39m","timestamp":"2026-06-06 20:50:16:5016"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mInitializing cron jobs...\u001b[39m","timestamp":"2026-06-06 20:50:16:5016"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mAll cron jobs initialized and started\u001b[39m","timestamp":"2026-06-06 20:50:16:5016"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mMongoDB connected successfully\u001b[39m","timestamp":"2026-06-06 20:50:18:5018"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32m🚀 Server running on http://localhost:5000\u001b[39m","timestamp":"2026-06-06 20:50:30:5030"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mInitializing scheduled tasks...\u001b[39m","timestamp":"2026-06-06 20:50:30:5030"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mInitializing cron jobs...\u001b[39m","timestamp":"2026-06-06 20:50:30:5030"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mAll cron jobs initialized and started\u001b[39m","timestamp":"2026-06-06 20:50:30:5030"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mMongoDB connected successfully\u001b[39m","timestamp":"2026-06-06 20:50:31:5031"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32m🚀 Server running on http://localhost:5000\u001b[39m","timestamp":"2026-06-06 20:50:40:5040"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mInitializing scheduled tasks...\u001b[39m","timestamp":"2026-06-06 20:50:40:5040"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mInitializing cron jobs...\u001b[39m","timestamp":"2026-06-06 20:50:40:5040"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mAll cron jobs initialized and started\u001b[39m","timestamp":"2026-06-06 20:50:40:5040"}
+{"level":"\u001b[33mwarn\u001b[39m","message":"\u001b[33mMongoDB disconnected\u001b[39m","timestamp":"2026-06-06 20:50:46:5046"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32m🚀 Server running on http://localhost:5000\u001b[39m","timestamp":"2026-06-06 20:50:51:5051"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mInitializing scheduled tasks...\u001b[39m","timestamp":"2026-06-06 20:50:51:5051"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mInitializing cron jobs...\u001b[39m","timestamp":"2026-06-06 20:50:51:5051"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mAll cron jobs initialized and started\u001b[39m","timestamp":"2026-06-06 20:50:51:5051"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mMongoDB connected successfully\u001b[39m","timestamp":"2026-06-06 20:50:52:5052"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32m🚀 Server running on http://localhost:5000\u001b[39m","timestamp":"2026-06-06 20:51:09:519"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mInitializing scheduled tasks...\u001b[39m","timestamp":"2026-06-06 20:51:09:519"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mInitializing cron jobs...\u001b[39m","timestamp":"2026-06-06 20:51:09:519"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mAll cron jobs initialized and started\u001b[39m","timestamp":"2026-06-06 20:51:09:519"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mMongoDB connected successfully\u001b[39m","timestamp":"2026-06-06 20:51:10:5110"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32m🚀 Server running on http://localhost:5000\u001b[39m","timestamp":"2026-06-06 20:51:23:5123"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mInitializing scheduled tasks...\u001b[39m","timestamp":"2026-06-06 20:51:23:5123"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mInitializing cron jobs...\u001b[39m","timestamp":"2026-06-06 20:51:23:5123"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mAll cron jobs initialized and started\u001b[39m","timestamp":"2026-06-06 20:51:23:5123"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mMongoDB connected successfully\u001b[39m","timestamp":"2026-06-06 20:51:25:5125"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32m🚀 Server running on http://localhost:5000\u001b[39m","timestamp":"2026-06-06 20:52:22:5222"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mInitializing scheduled tasks...\u001b[39m","timestamp":"2026-06-06 20:52:22:5222"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mInitializing cron jobs...\u001b[39m","timestamp":"2026-06-06 20:52:22:5222"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mAll cron jobs initialized and started\u001b[39m","timestamp":"2026-06-06 20:52:22:5222"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mMongoDB connected successfully\u001b[39m","timestamp":"2026-06-06 20:52:23:5223"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32m🚀 Server running on http://localhost:5000\u001b[39m","timestamp":"2026-06-06 20:54:57:5457"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mInitializing scheduled tasks...\u001b[39m","timestamp":"2026-06-06 20:54:57:5457"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mInitializing cron jobs...\u001b[39m","timestamp":"2026-06-06 20:54:57:5457"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mAll cron jobs initialized and started\u001b[39m","timestamp":"2026-06-06 20:54:57:5457"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mMongoDB connected successfully\u001b[39m","timestamp":"2026-06-06 20:55:00:550"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32m🚀 Server running on http://localhost:5000\u001b[39m","timestamp":"2026-06-06 20:55:13:5513"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mInitializing scheduled tasks...\u001b[39m","timestamp":"2026-06-06 20:55:13:5513"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mInitializing cron jobs...\u001b[39m","timestamp":"2026-06-06 20:55:13:5513"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mAll cron jobs initialized and started\u001b[39m","timestamp":"2026-06-06 20:55:13:5513"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mMongoDB connected successfully\u001b[39m","timestamp":"2026-06-06 20:55:14:5514"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32m🚀 Server running on http://localhost:5000\u001b[39m","timestamp":"2026-06-06 20:55:21:5521"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mInitializing scheduled tasks...\u001b[39m","timestamp":"2026-06-06 20:55:21:5521"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mInitializing cron jobs...\u001b[39m","timestamp":"2026-06-06 20:55:21:5521"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mAll cron jobs initialized and started\u001b[39m","timestamp":"2026-06-06 20:55:21:5521"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mMongoDB connected successfully\u001b[39m","timestamp":"2026-06-06 20:55:22:5522"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32m🚀 Server running on http://localhost:5000\u001b[39m","timestamp":"2026-06-06 20:55:32:5532"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mInitializing scheduled tasks...\u001b[39m","timestamp":"2026-06-06 20:55:32:5532"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mInitializing cron jobs...\u001b[39m","timestamp":"2026-06-06 20:55:32:5532"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mAll cron jobs initialized and started\u001b[39m","timestamp":"2026-06-06 20:55:32:5532"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mMongoDB connected successfully\u001b[39m","timestamp":"2026-06-06 20:55:33:5533"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32m🚀 Server running on http://localhost:5000\u001b[39m","timestamp":"2026-06-06 20:56:29:5629"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mInitializing scheduled tasks...\u001b[39m","timestamp":"2026-06-06 20:56:29:5629"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mInitializing cron jobs...\u001b[39m","timestamp":"2026-06-06 20:56:29:5629"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mAll cron jobs initialized and started\u001b[39m","timestamp":"2026-06-06 20:56:29:5629"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mMongoDB connected successfully\u001b[39m","timestamp":"2026-06-06 20:56:31:5631"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32m🚀 Server running on http://localhost:5000\u001b[39m","timestamp":"2026-06-06 20:56:41:5641"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mInitializing scheduled tasks...\u001b[39m","timestamp":"2026-06-06 20:56:41:5641"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mInitializing cron jobs...\u001b[39m","timestamp":"2026-06-06 20:56:41:5641"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mAll cron jobs initialized and started\u001b[39m","timestamp":"2026-06-06 20:56:41:5641"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mMongoDB connected successfully\u001b[39m","timestamp":"2026-06-06 20:56:42:5642"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32m🚀 Server running on http://localhost:5000\u001b[39m","timestamp":"2026-06-06 21:14:30:1430"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mInitializing scheduled tasks...\u001b[39m","timestamp":"2026-06-06 21:14:30:1430"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mInitializing cron jobs...\u001b[39m","timestamp":"2026-06-06 21:14:30:1430"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mAll cron jobs initialized and started\u001b[39m","timestamp":"2026-06-06 21:14:30:1430"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mMongoDB connected successfully\u001b[39m","timestamp":"2026-06-06 21:14:32:1432"}
