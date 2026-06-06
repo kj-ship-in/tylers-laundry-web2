@@ -1,7 +1,8 @@
+import path from 'path';
+
 import compression from 'compression';
 import cors from 'cors';
 import express, { Request, Response } from 'express';
-import path from 'path';
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 
