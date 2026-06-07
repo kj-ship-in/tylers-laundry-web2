@@ -11,6 +11,7 @@ const eslintConfig = defineConfig([
   globalIgnores([
     "node_modules/**",
     ".next/**",
+    ".netlify/**",
     "out/**",
     "dist/**",
     "build/**",
