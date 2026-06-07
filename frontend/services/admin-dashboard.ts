@@ -29,7 +29,6 @@ export const getAllAdminDashboardStats =
       );
     } catch (error: any) {
       console.error('Error fetching dashboard stats:', error);
-      // Return fallback data
       return {
         monthlyRevenue: 0,
         activeBookings: 0,
