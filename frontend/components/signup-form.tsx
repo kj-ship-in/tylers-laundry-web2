@@ -29,6 +29,7 @@ export function SignupForm() {
   const [error, setError] = useState<string | null>(null);
   const form = useForm<CreateAccountFormValues>({
     resolver: zodResolver(createAccountFormSchema),
+    mode: 'onChange',
     defaultValues: {
       name: '',
       email: '',
@@ -92,6 +93,7 @@ export function SignupForm() {
                 prefixIcon={User2}
                 label='Full Name'
                 name='name'
+                control={form.control}
                 placeholder='Enter full name'
                 type='text'
               />
@@ -101,6 +103,7 @@ export function SignupForm() {
                 prefixIcon={Mail}
                 label='Email'
                 name='email'
+                control={form.control}
                 placeholder='Enter email'
                 type='email'
               />
@@ -111,18 +114,23 @@ export function SignupForm() {
                 prefixIcon={Lock}
                 label='Password'
                 name='password'
+                control={form.control}
                 placeholder='Your password'
                 type='password'
                 togglePassword={togglePasswordVisibility}
                 secureEntry
                 isPasswordVisible={showPassword}
               />
+              <FieldDescription>
+                Must be at least 8 characters, with a number and special character.
+              </FieldDescription>
             </Field>
             <Field>
               <TextInputField
                 prefixIcon={Lock}
                 label='Confirm Password'
                 name='confirmPassword'
+                control={form.control}
                 placeholder='Confirm your password'
                 type='password'
                 togglePassword={toggleConfirmPasswordVisibility}
@@ -130,9 +138,6 @@ export function SignupForm() {
                 isPasswordVisible={showConfirmPassword}
               />
             </Field>
-            <FieldDescription>
-              Must be at least 8 characters long.
-            </FieldDescription>
           </Field>
           <Field>
             <Button
