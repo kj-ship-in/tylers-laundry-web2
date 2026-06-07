@@ -63,7 +63,7 @@ app.use(xssProtection);
 
 const allowedOrigins = [
   env.FRONTEND_URL,
-  'https://tylers-laundry-app.netlify.app',
+  'https://tylers-laundry.netlify.app',
   'http://localhost:3000',
   'http://localhost:3001',
 ];
