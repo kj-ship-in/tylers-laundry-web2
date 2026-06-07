@@ -59,13 +59,17 @@ export const registerUserService = async (
 
   const expiryTime = getRelativeExpiry(expiresAt);
 
-  await sendEmail({
-    to: user.email,
-    subject: 'Your Verification Code',
-    text: 'verification code',
-    code,
-    expiresAt: expiryTime,
-  });
+  try {
+    await sendEmail({
+      to: user.email,
+      subject: 'Your Verification Code',
+      text: 'verification code',
+      code,
+      expiresAt: expiryTime,
+    });
+  } catch (emailError) {
+    console.error('Failed to send verification email:', emailError);
+  }
 
   const role = (populatedUser?.roleId as any)?.name ?? 'USER';
   const userId = (user._id as any).toString();

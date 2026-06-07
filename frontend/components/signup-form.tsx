@@ -122,8 +122,8 @@ export function SignupForm() {
                 isPasswordVisible={showPassword}
               />
               <FieldDescription>
-                Must be at least 8 characters, with a number and special
-                character.
+                Must be at least 8 characters with an uppercase letter and a
+                number.
               </FieldDescription>
             </Field>
             <Field>
