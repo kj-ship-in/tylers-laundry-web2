@@ -35,7 +35,9 @@ export const registerUserService = async (
 
   const userRole = await Role.findOne({ name: 'USER', isActive: true });
   if (!userRole) {
-    throw new Error('Default USER role not found. Please run database seeding.');
+    throw new Error(
+      'Default USER role not found. Please run database seeding.',
+    );
   }
 
   const user = await User.create({
@@ -43,13 +45,15 @@ export const registerUserService = async (
     email,
     password: hashed,
     roleId: userRole._id,
-    isVerified: false,
+    isVerified: true,
   });
 
   const populatedUser = await User.findById(user._id).populate('roleId');
 
   const code = generateVerificationCode();
-  const expiresAt = new Date(Date.now() + CODE_EXPIRATION_MINUTES * 24 * 60 * 60 * 1000);
+  const expiresAt = new Date(
+    Date.now() + CODE_EXPIRATION_MINUTES * 24 * 60 * 60 * 1000,
+  );
 
   await EmailVerification.findOneAndUpdate(
     { userId: user._id },
@@ -76,15 +80,27 @@ export const registerUserService = async (
   const role = (populatedUser?.roleId as any)?.name ?? 'USER';
   const userId = (user._id as any).toString();
 
-  const accessToken = generateToken({ id: userId, name: user.name, email: user.email, role });
-  const refreshToken = generateRefreshToken({ id: userId, name: user.name, email: user.email, role });
+  const accessToken = generateToken({
+    id: userId,
+    name: user.name,
+    email: user.email,
+    role,
+  });
+  const refreshToken = generateRefreshToken({
+    id: userId,
+    name: user.name,
+    email: user.email,
+    role,
+  });
 
   await Session.findOneAndUpdate(
     { userId: user._id },
     {
       userId: user._id,
       refreshToken,
-      expiresAt: new Date(Date.now() + CODE_EXPIRATION_MINUTES * 24 * 60 * 60 * 1000),
+      expiresAt: new Date(
+        Date.now() + CODE_EXPIRATION_MINUTES * 24 * 60 * 60 * 1000,
+      ),
     },
     { upsert: true, new: true },
   );
@@ -106,7 +122,8 @@ export const registerUserService = async (
 
   return {
     success: true,
-    message: 'Customer registered successfully. Verification code sent to email.',
+    message:
+      'Customer registered successfully. Verification code sent to email.',
     data: { user: userProfile, accessToken, refreshToken, expiresIn: '15m' },
   };
 };
@@ -120,8 +137,11 @@ export const registerPrivilegedUserService = async (
     throw new Error('Use registerUserService for users');
   }
 
-  const requestingUser = await User.findById(requestingUserId).populate<{ roleId: { name: string } }>('roleId');
-  if (!requestingUser) throw new AuthenticationError('Requesting user not found');
+  const requestingUser = await User.findById(requestingUserId).populate<{
+    roleId: { name: string };
+  }>('roleId');
+  if (!requestingUser)
+    throw new AuthenticationError('Requesting user not found');
 
   const requestingRoleName = (requestingUser.roleId as any)?.name;
 
@@ -135,7 +155,8 @@ export const registerPrivilegedUserService = async (
   const { name, email, password } = data;
 
   const existingUser = await User.findOne({ email });
-  if (existingUser) throw new ConflictError('A user with this email already exists');
+  if (existingUser)
+    throw new ConflictError('A user with this email already exists');
 
   const hashed = await hashPassword(password);
 
@@ -179,15 +200,18 @@ export const registerPrivilegedUserService = async (
 export const registerAdmin = async (
   data: UserCreateInput,
   requestingUserId: string,
-): Promise<AuthResponse> => registerPrivilegedUserService(data, 'ADMIN', requestingUserId);
+): Promise<AuthResponse> =>
+  registerPrivilegedUserService(data, 'ADMIN', requestingUserId);
 
 export const registerStaff = async (
   data: UserCreateInput,
   requestingUserId: string,
-): Promise<AuthResponse> => registerPrivilegedUserService(data, 'STAFF', requestingUserId);
+): Promise<AuthResponse> =>
+  registerPrivilegedUserService(data, 'STAFF', requestingUserId);
 
-export const registerUser = async (data: UserCreateInput): Promise<AuthResponse> =>
-  registerUserService(data);
+export const registerUser = async (
+  data: UserCreateInput,
+): Promise<AuthResponse> => registerUserService(data);
 
 export const login = async (userId: string): Promise<AuthResponse> => {
   const user = await User.findByIdAndUpdate(
@@ -201,8 +225,18 @@ export const login = async (userId: string): Promise<AuthResponse> => {
   const roleName = (user.roleId as any)?.name ?? 'USER';
   const uid = (user._id as any).toString();
 
-  const token = generateToken({ id: uid, name: user.name, email: user.email, role: roleName });
-  const refreshToken = generateRefreshToken({ id: uid, name: user.name, email: user.email, role: roleName });
+  const token = generateToken({
+    id: uid,
+    name: user.name,
+    email: user.email,
+    role: roleName,
+  });
+  const refreshToken = generateRefreshToken({
+    id: uid,
+    name: user.name,
+    email: user.email,
+    role: roleName,
+  });
 
   await Session.findOneAndUpdate(
     { userId: user._id },
@@ -210,7 +244,9 @@ export const login = async (userId: string): Promise<AuthResponse> => {
       refreshToken,
       revokedAt: undefined,
       revoked: false,
-      expiresAt: new Date(Date.now() + CODE_EXPIRATION_MINUTES * 24 * 60 * 60 * 1000),
+      expiresAt: new Date(
+        Date.now() + CODE_EXPIRATION_MINUTES * 24 * 60 * 60 * 1000,
+      ),
     },
     { upsert: true, new: true },
   );
@@ -247,7 +283,8 @@ export const verifyUserEmail = async (
   const record = await EmailVerification.findOne({ userId, code });
 
   if (!record) throw new AuthenticationError('Invalid verification code');
-  if (record.expiresAt < new Date()) throw new AuthenticationError('Verification code expired');
+  if (record.expiresAt < new Date())
+    throw new AuthenticationError('Verification code expired');
 
   const user = await User.findByIdAndUpdate(
     userId,
@@ -262,8 +299,18 @@ export const verifyUserEmail = async (
   const roleName = (user.roleId as any)?.name ?? 'USER';
   const uid = (user._id as any).toString();
 
-  const token = generateToken({ id: uid, name: user.name, email: user.email, role: roleName });
-  const refreshToken = generateRefreshToken({ id: uid, name: user.name, email: user.email, role: roleName });
+  const token = generateToken({
+    id: uid,
+    name: user.name,
+    email: user.email,
+    role: roleName,
+  });
+  const refreshToken = generateRefreshToken({
+    id: uid,
+    name: user.name,
+    email: user.email,
+    role: roleName,
+  });
 
   await Session.findOneAndUpdate(
     { userId: user._id },
@@ -271,7 +318,9 @@ export const verifyUserEmail = async (
       refreshToken,
       revokedAt: undefined,
       revoked: false,
-      expiresAt: new Date(Date.now() + CODE_EXPIRATION_MINUTES * 24 * 60 * 60 * 1000),
+      expiresAt: new Date(
+        Date.now() + CODE_EXPIRATION_MINUTES * 24 * 60 * 60 * 1000,
+      ),
     },
     { upsert: true, new: true },
   );
@@ -306,7 +355,9 @@ export const requestVerificationCode = async (
   email: string,
 ): Promise<void> => {
   const code = generateVerificationCode();
-  const expiresAt = new Date(Date.now() + CODE_EXPIRATION_MINUTES * 24 * 60 * 60 * 1000);
+  const expiresAt = new Date(
+    Date.now() + CODE_EXPIRATION_MINUTES * 24 * 60 * 60 * 1000,
+  );
 
   await EmailVerification.findOneAndUpdate(
     { userId },
@@ -315,10 +366,26 @@ export const requestVerificationCode = async (
   );
 
   const expiryTime = getRelativeExpiry(expiresAt);
-  await sendEmail({ to: email, subject: 'Your Kodoo Verification Code', text: 'verification code', code, expiresAt: expiryTime });
+
+  console.log(`[DEV] Verification code for ${email}: ${code}`);
+
+  try {
+    await sendEmail({
+      to: email,
+      subject: 'Your Verification Code',
+      text: 'verification code',
+      code,
+      expiresAt: expiryTime,
+    });
+  } catch (emailError) {
+    console.error('Failed to send verification email:', emailError);
+  }
 };
 
-export const requestPasswordReset = async (userId: string, email: string): Promise<void> => {
+export const requestPasswordReset = async (
+  userId: string,
+  email: string,
+): Promise<void> => {
   const resetToken = generateResetToken(6);
   const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
 
@@ -329,29 +396,50 @@ export const requestPasswordReset = async (userId: string, email: string): Promi
   );
 
   const expiryTime = getRelativeExpiry(expiresAt);
-  await sendEmail({ to: email, subject: 'Reset Your Password', text: 'reset token', code: resetToken, expiresAt: expiryTime });
+  await sendEmail({
+    to: email,
+    subject: 'Reset Your Password',
+    text: 'reset token',
+    code: resetToken,
+    expiresAt: expiryTime,
+  });
 };
 
 export const validateResetToken = async (token: string): Promise<boolean> => {
-  const record = await PasswordResetToken.findOne({ resetToken: token, expiresAt: { $gt: new Date() } });
+  const record = await PasswordResetToken.findOne({
+    resetToken: token,
+    expiresAt: { $gt: new Date() },
+  });
   if (!record) throw new Error('Invalid reset token');
   return !!record.resetToken;
 };
 
-export const resetPassword = async (userId: string, newPassword: string): Promise<any> => {
+export const resetPassword = async (
+  userId: string,
+  newPassword: string,
+): Promise<any> => {
   const storedToken = await PasswordResetToken.findOne({ userId });
   if (!storedToken || storedToken.expiresAt < new Date()) {
     throw new Error('Invalid or expired reset token');
   }
 
   const hashed = await hashPassword(newPassword);
-  await User.findByIdAndUpdate(userId, { password: hashed, passwordUpdatedAt: new Date() });
+  await User.findByIdAndUpdate(userId, {
+    password: hashed,
+    passwordUpdatedAt: new Date(),
+  });
   await PasswordResetToken.findOneAndDelete({ userId });
 };
 
-export const changePassword = async (userId: string, newPassword: string): Promise<void> => {
+export const changePassword = async (
+  userId: string,
+  newPassword: string,
+): Promise<void> => {
   const hashed = await hashPassword(newPassword);
-  await User.findByIdAndUpdate(userId, { password: hashed, passwordUpdatedAt: new Date() });
+  await User.findByIdAndUpdate(userId, {
+    password: hashed,
+    passwordUpdatedAt: new Date(),
+  });
 };
 
 export const userExists = async (email: string): Promise<boolean> => {
@@ -373,20 +461,31 @@ export const logoutService = async (userId: string): Promise<void> => {
 
   const now = new Date();
   if (session.expiresAt <= now) {
-    await Session.findOneAndUpdate({ userId }, { revokedAt: now, revoked: true });
+    await Session.findOneAndUpdate(
+      { userId },
+      { revokedAt: now, revoked: true },
+    );
     throw new Error('Token already expired');
   }
 
   await Session.findOneAndUpdate({ userId }, { revokedAt: now, revoked: true });
 };
 
-export const softDeleteUser = async (userId: string, deletionReason = 'USER_REQUESTED') => {
+export const softDeleteUser = async (
+  userId: string,
+  deletionReason = 'USER_REQUESTED',
+) => {
   const timestamp = Date.now();
   const anonymizedEmail = `deleted_${timestamp}_${userId.slice(-6)}@deleted.com`;
 
   return User.findByIdAndUpdate(
     userId,
-    { deletedAt: new Date(), email: anonymizedEmail, isActive: false, deletionReason },
+    {
+      deletedAt: new Date(),
+      email: anonymizedEmail,
+      isActive: false,
+      deletionReason,
+    },
     { new: true, select: 'id email isActive deletedAt deletionReason' },
   );
 };

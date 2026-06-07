@@ -19,9 +19,10 @@ import {
 interface Props {
   open: boolean;
   email: string;
+  onClose: () => void;
 }
 
-export function VerifyEmailModal({ open, email }: Props) {
+export function VerifyEmailModal({ open, email, onClose }: Props) {
   const router = useRouter();
   const [digits, setDigits] = useState(['', '', '', '', '', '']);
   const [isLoading, setIsLoading] = useState(false);
@@ -110,12 +111,13 @@ export function VerifyEmailModal({ open, email }: Props) {
   const isComplete = digits.join('').length === 6;
 
   return (
-    <Dialog open={open} onOpenChange={() => {}}>
-      <DialogContent
-        showCloseButton={false}
-        onPointerDownOutside={e => e.preventDefault()}
-        onEscapeKeyDown={e => e.preventDefault()}
-      >
+    <Dialog
+      open={open}
+      onOpenChange={open => {
+        if (!open) onClose();
+      }}
+    >
+      <DialogContent>
         <DialogHeader className='text-center sm:text-center'>
           <DialogTitle>Verify your email</DialogTitle>
           <DialogDescription>
@@ -153,6 +155,7 @@ export function VerifyEmailModal({ open, email }: Props) {
                   inputMode='numeric'
                   maxLength={1}
                   value={digit}
+                  aria-label={`Digit ${i + 1}`}
                   onChange={e => handleChange(i, e.target.value)}
                   onKeyDown={e => handleKeyDown(i, e)}
                   className='h-12 w-10 rounded-md border border-input bg-background text-center text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-ring'
@@ -181,6 +184,7 @@ export function VerifyEmailModal({ open, email }: Props) {
                 <span>Resend in {cooldown}s</span>
               ) : (
                 <button
+                  type='button'
                   onClick={handleResend}
                   className='underline hover:text-foreground'
                 >
