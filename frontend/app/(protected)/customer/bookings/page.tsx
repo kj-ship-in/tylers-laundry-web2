@@ -1,6 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
+import { Plus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import BookingDrawer from '@/components/drawer/BookingDrawer';
 import DataTable from '@/components/table/DataTable';
 import { useFetchAllMyBookings } from '@/hooks/useBookingsQuery';
 import type { Booking } from '@/types/booking.d';
@@ -15,6 +18,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 const BookingsPage = () => {
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const { data, isLoading, error } = useFetchAllMyBookings();
 
   const columns: Array<{
@@ -102,27 +106,39 @@ const BookingsPage = () => {
   }
 
   return (
-    <div className='space-y-4'>
-      <div>
-        <h1 className='text-2xl font-bold text-gray-900'>My Bookings</h1>
-        <p className='text-gray-500 text-sm mt-1'>
-          Track the status of your submitted bookings. Contact us if you need
-          changes.
-        </p>
-      </div>
+    <>
+      <BookingDrawer open={drawerOpen} onOpenChange={setDrawerOpen} />
+      <div className='space-y-4'>
+        <div className='flex items-center justify-between'>
+          <div>
+            <h1 className='text-2xl font-bold text-gray-900'>My Bookings</h1>
+            <p className='text-gray-500 text-sm mt-1'>
+              Track the status of your submitted bookings. Contact us if you
+              need changes.
+            </p>
+          </div>
+          <Button
+            onClick={() => setDrawerOpen(true)}
+            className='bg-linear-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600'
+          >
+            <Plus size={16} className='mr-1' />
+            Add Booking
+          </Button>
+        </div>
 
-      <DataTable
-        columns={columns}
-        data={data ?? []}
-        loading={isLoading}
-        searchPlaceholder='Search bookings...'
-        emptyMessage='You have no bookings yet.'
-        enableSorting
-        enableFiltering
-        enablePagination
-        pageSize={10}
-      />
-    </div>
+        <DataTable
+          columns={columns}
+          data={data ?? []}
+          loading={isLoading}
+          searchPlaceholder='Search bookings...'
+          emptyMessage='You have no bookings yet.'
+          enableSorting
+          enableFiltering
+          enablePagination
+          pageSize={10}
+        />
+      </div>
+    </>
   );
 };
 

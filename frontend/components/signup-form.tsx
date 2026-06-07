@@ -10,6 +10,7 @@ import { Lock, Mail, User2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
 import TextInputField from './form/text-input-field';
 import { Alert, AlertDescription } from './ui/alert';
@@ -45,6 +46,7 @@ export function SignupForm() {
     setError(null);
     try {
       await createAccountService(values);
+      toast.success('Account created! Please sign in.');
       router.push('/login');
     } catch (err) {
       const errorMessage =

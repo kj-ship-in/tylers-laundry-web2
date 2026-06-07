@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { CheckCircle, Clock, AlertCircle, XCircle } from 'lucide-react';
+import { CheckCircle, Clock, AlertCircle, XCircle, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import DataTable from '@/components/table/DataTable';
 import type { Booking } from '@/types/booking';
@@ -17,6 +17,7 @@ type RecentBookingsProps = {
   bookings: Booking[];
   isLoading: boolean;
   error?: string;
+  onAdd?: () => void;
 };
 
 const getStatusIcon = (status: string) => {
@@ -48,7 +49,11 @@ const getStatusColor = (status: string) => {
   );
 };
 
-const RecentBookings = ({ bookings, isLoading }: RecentBookingsProps) => {
+const RecentBookings = ({
+  bookings,
+  isLoading,
+  onAdd,
+}: RecentBookingsProps) => {
   const updateStatusMutation = useUpdateBookingStatus();
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [newStatus, setNewStatus] = useState<Booking['status']>('PENDING');
@@ -164,6 +169,16 @@ const RecentBookings = ({ bookings, isLoading }: RecentBookingsProps) => {
           <CardTitle className='text-xl font-bold text-gray-900'>
             Recent Bookings
           </CardTitle>
+          {onAdd && (
+            <Button
+              size='sm'
+              onClick={onAdd}
+              className='bg-linear-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600'
+            >
+              <Plus size={14} className='mr-1' />
+              Add Booking
+            </Button>
+          )}
         </CardHeader>
 
         <CardContent className='w-full'>

@@ -1,15 +1,22 @@
 import app from './app';
 import { env } from './config/env';
 import { connectDB } from './lib/mongoose';
+import { ensureEssentials } from './scripts/ensure-essentials';
 import CronJobService from './services/cron.service';
 import logger from './utils/logger';
 
 const PORT = env.PORT ?? 3000;
 
-connectDB().catch(err => {
-  logger.error('Failed to connect to MongoDB:', err);
-  process.exit(1);
-});
+connectDB()
+  .then(() =>
+    ensureEssentials().catch(err =>
+      logger.warn('ensureEssentials failed (non-fatal):', err),
+    ),
+  )
+  .catch(err => {
+    logger.error('Failed to connect to MongoDB:', err);
+    process.exit(1);
+  });
 
 const server = app.listen(PORT, () => {
   logger.info(`🚀 Server running on http://localhost:${PORT}`);
