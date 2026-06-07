@@ -50,7 +50,34 @@ export const createAccountService = async ({
 
     return res.data;
   } catch (error: any) {
-    console.log('Error fetching geocoding data:', JSON.stringify(error));
-    throw Error('Failed to fetch geocoding data ', error.message);
+    const message =
+      error.response?.data?.message ?? 'Failed to create account.';
+    throw new Error(message);
+  }
+};
+
+export const verifyEmailService = async (
+  email: string,
+  code: string,
+): Promise<void> => {
+  try {
+    await axios.post(`${BASE_URL}/auth/verify-email`, { email, code });
+  } catch (error: any) {
+    const message =
+      error.response?.data?.message ?? 'Verification failed. Please try again.';
+    throw new Error(message);
+  }
+};
+
+export const resendVerificationCodeService = async (
+  email: string,
+): Promise<void> => {
+  try {
+    await axios.post(`${BASE_URL}/auth/request-verification-code`, { email });
+  } catch (error: any) {
+    const message =
+      error.response?.data?.message ??
+      'Failed to resend code. Please try again.';
+    throw new Error(message);
   }
 };

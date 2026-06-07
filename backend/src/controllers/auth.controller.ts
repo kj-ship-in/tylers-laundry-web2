@@ -179,7 +179,11 @@ export const verifyEmailController = async (
 
     await authService.verifyUserEmail(userExist.id, code);
 
-    await sendWelcomeEmail(email, userExist.name);
+    try {
+      await sendWelcomeEmail(email, userExist.name);
+    } catch (emailError) {
+      console.error('Failed to send welcome email:', emailError);
+    }
 
     res
       .status(200)
