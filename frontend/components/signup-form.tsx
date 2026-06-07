@@ -122,7 +122,8 @@ export function SignupForm() {
                 isPasswordVisible={showPassword}
               />
               <FieldDescription>
-                Must be at least 8 characters, with a number and special character.
+                Must be at least 8 characters, with a number and
+                special character.
               </FieldDescription>
             </Field>
             <Field>
@@ -155,6 +156,18 @@ export function SignupForm() {
               )}
             </Button>
           </Field>
+          <FieldDescription className='text-center text-xs text-muted-foreground'>
+            By creating an account, you agree to our{' '}
+            <a
+              href='https://www.termsfeed.com/live/9f6d2535-df44-4982-b4a6-bd91d89fdabf'
+              target='_blank'
+              rel='noopener noreferrer'
+              className='underline hover:text-foreground'
+            >
+              Privacy Policy
+            </a>
+            .
+          </FieldDescription>
           <FieldDescription className='text-center'>
             Already have an account? <Link href='/login'>Sign In</Link>
           </FieldDescription>
