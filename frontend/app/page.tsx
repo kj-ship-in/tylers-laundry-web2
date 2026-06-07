@@ -309,7 +309,7 @@ const HomePage = () => {
                       ? '/admin/dashboard'
                       : user?.user?.role === 'STAFF'
                         ? '/staff/dashboard'
-                        : '/customer'
+                        : '/customer/dashboard'
                   }
                   className='block py-2 font-semibold text-blue-600 hover:text-blue-800 transition'
                   onClick={() => setMobileMenuOpen(false)}

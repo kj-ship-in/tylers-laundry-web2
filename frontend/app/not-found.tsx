@@ -1,9 +1,11 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { Search, Rocket, Star, Home, ArrowLeft } from 'lucide-react';
 
 export default function NotFound() {
+  const router = useRouter();
   const [countdown, setCountdown] = useState(5);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
@@ -12,8 +14,7 @@ export default function NotFound() {
       setCountdown(prev => {
         if (prev <= 1) {
           clearInterval(timer);
-          // In a real Next.js app, this would redirect
-          console.log('Redirecting to home...');
+          router.push('/');
           return 0;
         }
         return prev - 1;
@@ -21,9 +22,9 @@ export default function NotFound() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, []);
+  }, [router]);
 
-  const handleMouseMove = useCallback(e => {
+  const handleMouseMove = useCallback((e: MouseEvent) => {
     setMousePosition({
       x: (e.clientX / window.innerWidth) * 20 - 10,
       y: (e.clientY / window.innerHeight) * 20 - 10,
@@ -35,13 +36,9 @@ export default function NotFound() {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, [handleMouseMove]);
 
-  const handleGoHome = () => {
-    console.log('Navigate to home');
-  };
+  const handleGoHome = () => router.push('/');
 
-  const handleGoBack = () => {
-    console.log('Navigate back');
-  };
+  const handleGoBack = () => router.back();
 
   return (
     <div className='min-h-screen bg-linear-to-br from-blue-500 via-blue-400 to-orange-400 flex items-center justify-center p-4 overflow-hidden relative'>
