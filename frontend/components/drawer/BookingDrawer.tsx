@@ -21,7 +21,6 @@ import {
   FormLabel,
   FormMessage,
 } from '../ui/form';
-import TextInputField from '../form/text-input-field';
 import SelectInput from '../form/select-input';
 import TextareaField from '../form/textarea-field';
 import DatePickerInput from '../custom-date-picker';
@@ -29,13 +28,10 @@ import { Checkbox } from '../ui/checkbox';
 import { Button } from '../ui/button';
 import { Alert, AlertDescription } from '../ui/alert';
 import { Calendar } from 'lucide-react';
-import { SelectContent, SelectItem } from '../ui/select';
+import { SelectItem } from '../ui/select';
 import type { BookingFormValues } from '@/utils/schemas/booking.schema';
 import { createBookingSchema } from '@/utils/schemas/booking.schema';
-import {
-  useFetchPublicServices,
-  useFetchServices,
-} from '@/hooks/useServicesQuery';
+import { useFetchPublicServices } from '@/hooks/useServicesQuery';
 import { useCreateBooking } from '@/hooks/useBookingsQuery';
 import LoadingSpinnerSmall from '../loadings/loading-spinner-small';
 import type { Service } from '@/types/service';
@@ -49,12 +45,7 @@ type BookingDrawerProps = {
 };
 
 const BookingDrawer = ({ open, onOpenChange }: BookingDrawerProps) => {
-  const {
-    data: services,
-    isFetching,
-    error,
-    refetch,
-  } = useFetchPublicServices();
+  const { data: services, isFetching } = useFetchPublicServices();
   const {
     mutate: createNewBooking,
     isPending,
@@ -120,8 +111,6 @@ const BookingDrawer = ({ open, onOpenChange }: BookingDrawerProps) => {
     );
   };
 
-  // Debug: Log form state
-  const formErrors = form.formState.errors;
   const isFormValid = form.formState.isValid;
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
@@ -134,7 +123,7 @@ const BookingDrawer = ({ open, onOpenChange }: BookingDrawerProps) => {
             </DrawerDescription>
           </DrawerHeader>
 
-          <div className='px-4 pb-8'>
+          <div className='pb-8'>
             <Form {...form}>
               <form
                 onSubmit={form.handleSubmit(onSubmit)}
@@ -167,14 +156,6 @@ const BookingDrawer = ({ open, onOpenChange }: BookingDrawerProps) => {
                   </Alert>
                 )}
 
-                {/* Debug: Show validation errors */}
-                {Object.keys(formErrors).length > 0 && (
-                  <Alert className='border-yellow-500 bg-yellow-50'>
-                    <AlertDescription className='text-yellow-800 text-xs'>
-                      Validation errors: {Object.keys(formErrors).join(', ')}
-                    </AlertDescription>
-                  </Alert>
-                )}
                 <div className='grid md:grid-cols-3 gap-4'>
                   <SelectInput
                     name='serviceId'
@@ -291,20 +272,20 @@ const BookingDrawer = ({ open, onOpenChange }: BookingDrawerProps) => {
                   </label>
                 </div>
 
-                <DrawerFooter className='flex justify-center items-center flex-row gap-32'>
+                <DrawerFooter className='flex flex-col-reverse sm:flex-row sm:justify-center gap-3 px-0'>
+                  <DrawerClose asChild>
+                    <Button
+                      variant='outline'
+                      className='w-full sm:w-48'
+                      disabled={isPending}
+                    >
+                      Cancel
+                    </Button>
+                  </DrawerClose>
                   <Button
                     type='submit'
                     disabled={isPending || !termsAccepted || !isFormValid}
-                    title={
-                      !isFormValid
-                        ? `Form invalid. Errors: ${Object.keys(formErrors).join(', ')}`
-                        : !termsAccepted
-                          ? 'Please accept terms'
-                          : isPending
-                            ? 'Submitting...'
-                            : ''
-                    }
-                    className='w-52 py-6 bg-linear-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white text-lg disabled:opacity-50 cursor-pointer'
+                    className='w-full sm:w-48 py-6 bg-linear-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white text-lg disabled:opacity-50'
                   >
                     {isPending ? (
                       <div className='flex items-center gap-2'>
@@ -318,15 +299,6 @@ const BookingDrawer = ({ open, onOpenChange }: BookingDrawerProps) => {
                       </>
                     )}
                   </Button>
-                  <DrawerClose asChild>
-                    <Button
-                      variant='outline'
-                      className='w-52'
-                      disabled={isPending}
-                    >
-                      Cancel
-                    </Button>
-                  </DrawerClose>
                 </DrawerFooter>
               </form>
             </Form>
