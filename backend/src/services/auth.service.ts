@@ -59,6 +59,8 @@ export const registerUserService = async (
 
   const expiryTime = getRelativeExpiry(expiresAt);
 
+  console.log(`[DEV] Verification code for ${user.email}: ${code}`);
+
   try {
     await sendEmail({
       to: user.email,
