@@ -7,9 +7,7 @@ import type {
   StaffEfficiencyMetrics,
 } from '@/types/admin';
 import type { Booking } from '@/types/booking';
-import { BookingResponse, CreateBooking } from '@/types/booking';
 import apiClient from '@/utils/api-client';
-import { BookingFormValues } from '@/utils/schemas/booking.schema';
 
 /**
  * Get all admin dashboard stats
